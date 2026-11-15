@@ -12,4 +12,6 @@ Next April shows VoltRelay which 36 swap cabinets will fail again next summer, w
 
 **How we checked it.** The Colab notebook downloads the organiser's files and runs top to bottom. Independent tests re-derive the headline numbers, a script fails if any text quotes a number the notebook did not compute, and a self-audit recomputes the headlines under other reasonable choices.
 
+**Links.** Colab notebook: https://colab.research.google.com/github/kinnuworks/next-april/blob/master/notebooks/next_april.ipynb · Report (PDF): https://github.com/kinnuworks/next-april/blob/master/report/Next_April_report.pdf · Code and data checks: https://github.com/kinnuworks/next-april · Video: <your video link>
+
 **AI use.** An AI coding assistant (Claude) helped write code and draft text. Every output was checked against the data by the notebook, the tests and the number-tracing script.
