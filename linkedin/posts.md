@@ -2,6 +2,24 @@
 
 Timing: post 1 now, post 2 mid-afternoon, post 3 after you submit (it gives away the station list and the back-test, so other teams can't use it today). Each one ends with a question, as the template asks. Attach the image named under each post.
 
+## Main post (the one to submit)
+
+A battery-swap network grew completed swaps 2.93 times in 18 months. Failed swaps grew 5.98 times.
+
+For the Data Analytics Hackathon by Gradient Learnings, I worked through 3,877,013 swap attempts from an electric two- and three-wheeler network in six Indian cities. Leadership had four budget ideas on the table: more stations, more batteries, peak pricing everywhere, or an exclusive deal with the biggest fleet partner.
+
+The data pointed somewhere else. The same 36 old cabinets in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer attempts and produced 51.2% of the failures. At 45°C inside the cabinet, they take 156 minutes to charge a pack, against 88 when cool. The newest cabinets get just as hot and still charge in 43.
+
+I expected "add more packs" to be the fix. It isn't. Compare the same station at the same temperature, and a cabinet with zero charged packs turns riders away no more often than one with packs on the shelf. The heat is the cause; the empty shelf is a symptom.
+
+A rule built from summer 2024 alone predicted every station's summer 2025 failure rate with an out-of-sample R² of 0.990. So the answer to "where should the budget go" is: fix those 36 cabinets before next April, not more stations.
+
+Have you ever found that the obvious fix in your data was treating a symptom?
+
+#DataAnalytics #DataAnalyticsHackathon #DataScience #Analytics #BuildWithData
+
+Image: outputs/charts/backtest.png (or readme_hero.png)
+
 ## Post 1 (now): the problem
 
 Day 1 of the Data Analytics Hackathon by Gradient Learnings.
