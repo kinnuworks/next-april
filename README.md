@@ -4,7 +4,17 @@ The same 36 old battery-swap cabinets will fail again next summer (April to June
 
 One rule from summer 2024 (each station gets the failure rate of its charger generation in its city) predicted each station's summer 2025 failure rate, for the 90 stations open both summers, with an out-of-sample R² of 0.990 (scored station by station; the chart groups stations by generation and city). The 36 Gen1 stations, the oldest cabinet generation, in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer 2025 attempts and produced 51.2% of its failed attempts.
 
+**Chart 1: the same stations fail every summer.** Each bubble is one charger generation in one city; red is Gen1 in the three hottest cities. Summer 2024 on the x-axis predicts summer 2025 on the y-axis.
+
 ![Back-test: the summer 2024 rule against summer 2025](outputs/charts/backtest.png)
+
+**Chart 2: why.** Only Gen1 cabinets slow down as they heat up; at the same temperature, an empty cabinet turns riders away no more often than a stocked one, so the fix is the cabinet.
+
+![Mechanism: charge time, empty hours and failures by cabinet temperature](outputs/charts/q3_mechanism.png)
+
+**Chart 3: what it costs riders.** New riders who hit failed swaps early stop swapping within their first month.
+
+![Share of new riders still swapping, by early failures](outputs/charts/q6_survival.png)
 
 **Run it in about two minutes:** open `notebooks/next_april.ipynb` in Google Colab and choose Runtime → Run all. It downloads the organiser's eight CSV files itself and runs top to bottom.
 
