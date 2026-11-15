@@ -466,6 +466,33 @@ for i in range(piv.shape[0]):
 ax.set_title("Apr-Jun failed attempts: old Gen1 cabinets in the three hottest cities"); ax.grid(False)
 savefig(fig, "q3_gen_city")
 
+# %% [markdown]
+# ### The weather link: a forecast trigger for operations
+# Daily city weather (city_daily_context) joined to each day's attempts. Context: lithium-ion cells are commonly charged only between 0°C and 45°C (Battery University, a secondary source), which matches where Gen1 cabinets break down.
+
+# %%
+wd = sql("""select e.city, e.gen, e.ts::date d, count(*) n, avg((not e.ok)::int) f, c.max_temp_c, c.grid_outage_hours, c.rainfall_mm
+   from evr e join raw_city_daily_context c on c.city = e.city and c.date = e.ts::date group by all""")
+wd["band"] = pd.cut(wd.max_temp_c, [0, 30, 34, 36, 38, 40, 44, 50], labels=["<=30", "30-34", "34-36", "36-38", "38-40", "40-44", "44+"])
+wb = wd.groupby(["band", "gen"]).apply(lambda g: 100*np.average(g.f, weights=g.n)).unstack()
+print("Failed attempts % by the day's maximum temperature\n", wb.round(1).to_string())
+for gname in ["Gen1", "Gen3"]:
+    fact(f"wx_fail_{gname}_le34_pct", 100*np.average(wd[(wd.gen == gname) & (wd.max_temp_c <= 34)].f, weights=wd[(wd.gen == gname) & (wd.max_temp_c <= 34)].n))
+    fact(f"wx_fail_{gname}_ge38_pct", 100*np.average(wd[(wd.gen == gname) & (wd.max_temp_c > 38)].f, weights=wd[(wd.gen == gname) & (wd.max_temp_c > 38)].n))
+wm = smf.wls("f ~ C(gen)*max_temp_c + grid_outage_hours + rainfall_mm + C(city)", wd, weights=wd.n).fit(cov_type="cluster", cov_kwds={"groups": wd.city})
+fact("wx_outage_pts_per_hour", 100*wm.params["grid_outage_hours"]); fact("wx_outage_p", wm.pvalues["grid_outage_hours"])
+hotdays = sql("""select city, count(*) filter (where max_temp_c >= 36) d36 from raw_city_daily_context where year(date)=2025 and month(date) in (4,5,6) group by 1""")
+for _, r in hotdays.iterrows(): fact(f"hot_days_2025_{r.city.replace(' ','_')}", r.d36)
+print(hotdays.to_string(index=False))
+print(f"Each hour of city-wide grid outage adds {FACTS['wx_outage_pts_per_hour']:.1f} points to that day's failure rate (p={FACTS['wx_outage_p']:.3f})")
+fig, ax = plt.subplots(figsize=(9, 4))
+for gname, col in [("Gen1", ACCENT), ("Gen2", MUTED), ("Gen3", GOOD)]:
+    ax.plot(wb.index.astype(str), wb[gname], marker="o", color=col, label=gname)
+ax.axvline(2.5, color=INK, lw=.7, ls="--"); ax.text(2.6, ax.get_ylim()[1]*0.92, "36°C: the trigger", fontsize=9)
+ax.set_xlabel("day's maximum temperature in the city (°C)"); ax.set_ylabel("failed attempts, %"); ax.legend(frameon=False)
+ax.set_title("Above 36°C outside, Gen1 failures jump; Gen3 barely moves")
+savefig(fig, "q3_weather")
+
 tk = sql("""select s.charger_generation gen, count(t.ticket_id) tickets from raw_support_tickets t join st s using(station_id) group by 1""")
 sw_by_gen = sql("select gen, count(*) n from evr group by 1")
 tk = tk.merge(sw_by_gen, on="gen"); tk["per_10k"] = 1e4*tk.tickets/tk.n
@@ -564,8 +591,9 @@ from itertools import combinations
 cities6 = sorted(cm_city.city.unique()); perm = []
 for pair in combinations(cities6, 2):
     d_ = cm_city.assign(treated=cm_city.city.isin(pair).astype(int))
-    perm.append((pair, smf.wls("peak_share ~ treated:post + C(city) + C(mon)", data=d_, weights=d_.n).fit().params["treated:post"]))
-real = did["peak_share"][0]
+    fit_ = smf.wls("peak_share ~ treated:post + C(city) + C(mon)", data=d_, weights=d_.n).fit()
+    perm.append((pair, fit_.tvalues["treated:post"]))
+real = smf.wls("peak_share ~ treated:post + C(city) + C(mon)", data=cm_city, weights=cm_city.n).fit().tvalues["treated:post"]  # randomization inference on t-statistics (MacKinnon & Webb)
 fact("perm_pairs", len(perm)); fact("perm_rank", sum(abs(v) >= abs(real) - 1e-12 for _, v in perm)); fact("perm_p", FACTS["perm_rank"]/len(perm))
 print("Permutation: real pilot effect ranks", int(FACTS["perm_rank"]), "of", len(perm), "possible city pairs by size")
 fact("did_peak_share_pts", 100*did["peak_share"][0]); fact("did_rev_inr", did["rev"][0]); fact("did_peak_fail_pts", 100*did["peak_fail"][0])
@@ -690,6 +718,22 @@ for p_, n_ in zip(ax.patches, fb["size"]): ax.annotate(f"{p_.get_height():.1f}%\
 ax.set_xlabel("share of a new rider's swap attempts that failed in their first 14 days"); ax.set_ylabel("% who did not come back (days 30-60)")
 ax.set_title("New riders who hit failed swaps early are far more likely to leave")
 savefig(fig, "q6_churn")
+
+# Survival view: share of new riders still active N days after their first swap (active = any attempt on or after day N),
+# by early failure group; riders whose window runs past the end of the data are counted only where observable.
+lastseen = sql("""with fa as (select rider_id, min(ts) t0, max(ts) t1 from evr group by 1) select rider_id, date_diff('day', t0, t1) life, date_diff('day', t0, timestamp '2025-06-30 23:59:59') obs from fa""")
+sv = nr[["rider_id", "frate"]].merge(lastseen, on="rider_id")
+sv["grp"] = pd.cut(sv.frate, [-.001, 0, .2, 1], labels=["no early failures", "0-20% failed", ">20% failed"])
+days = np.arange(0, 181, 5); curves = {}
+for gname, g in sv.groupby("grp"):
+    curves[gname] = [100*(g[g.obs >= d_].life >= d_).mean() for d_ in days]
+fact("surv90_nofail_pct", curves["no early failures"][list(days).index(90)]); fact("surv90_highfail_pct", curves[">20% failed"][list(days).index(90)])
+fig, ax = plt.subplots(figsize=(9, 4))
+for gname, col in [("no early failures", GOOD), ("0-20% failed", MUTED), (">20% failed", ACCENT)]:
+    ax.plot(days, curves[gname], color=col, label=gname)
+ax.set_xlabel("days since first swap"); ax.set_ylabel("% still swapping"); ax.legend(frameon=False)
+ax.set_title(f"90 days in: {FACTS['surv90_nofail_pct']:.0f}% of riders with no early failures still swap, {FACTS['surv90_highfail_pct']:.0f}% of those with >20%")
+savefig(fig, "q6_survival")
 
 # Out-of-sample check: fit on riders who started before 2025, predict riders who started in 2025
 from sklearn.metrics import roc_auc_score
@@ -910,6 +954,31 @@ ax.set_title("New stations were spread evenly; the failures were not")
 savefig(fig, "expansion")
 
 # %% [markdown]
+# ### Anomalies
+# Stations that behave unlike their own group (charger generation in a city) on failures, system errors, queue time or abandonment, and pack or data irregularities worth flagging.
+
+# %%
+an = sql("""select station_id, city, gen, avg((not ok)::int) f, avg((event_type='failed_system_error')::int) se, avg(queue_wait_sec) q, avg((event_type='abandoned_queue')::int) ab
+   from evr group by all""")
+for c in ["f", "se", "q", "ab"]:
+    an[c + "_z"] = an.groupby(["gen", "city"])[c].transform(lambda x: (x - x.mean())/x.std(ddof=0))
+outl = an[(an[["f_z", "se_z", "q_z", "ab_z"]].abs() > 3).any(axis=1)]
+fact("station_outliers_3sd", len(outl))
+kh = sql("""select city in ('Jaipur','Delhi NCR','Hyderabad') hot, avg(soh_in_pct) soh from evr e join raw_batteries b on b.battery_id=e.battery_in_id
+   where b.supplier='Kyron' and e.y=2025 group by 1""").set_index("hot").soh
+fact("kyron_soh_in_hot_2025", kh[True]); fact("kyron_soh_in_cool_2025", kh[False])
+print(f"Stations more than 3 SD from their group on any service measure: {len(outl)}")
+print(f"Kyron packs returned in 2025 at {kh[True]:.1f}% health in the three hot cities vs {kh[False]:.1f}% elsewhere")
+anom = pd.DataFrame([
+    ("Kyron packs issued after their 'retirement' date", f"{int(FACTS['kyron_issued_after_retirement']):,} swaps, 15-30 Jun 2025"),
+    ("Kyron wear is worse in heat", f"{kh[True]:.1f}% vs {kh[False]:.1f}% health on return, 2025"),
+    ("Test stations bill real money", f"{int(FACTS['test_rows']):,} rows, ₹{FACTS['test_amount_lakh']:.1f} lakh"),
+    ("Firmware v3.2.0 clock window", f"{int(FACTS['firmware_rows']):,} swaps logged 5h30 early"),
+    ("No station is an outlier within its group", f"{len(outl)} stations beyond 3 SD; failures are a group property"),
+], columns=["anomaly", "size"])
+print(anom.to_string(index=False))
+
+# %% [markdown]
 # ## 11. The budget decision: a verdict on each of the four proposals
 # Cabinet upgrade prices are not in the data, so instead of guessing one we compute the **break-even**: the most VoltRelay could pay per listed station and still get the money back in one summer.
 
@@ -919,8 +988,33 @@ fact("upgrade_saved_rev_lakh", (up.avoided*rec24*avg_rev).sum()/1e5)
 per_station_value = per_station_lost_swaps*avg_rev + (riders_lost/FACTS["gen1_stations"])*monthly_rev_retained*6
 fact("breakeven_per_station_lakh", per_station_value.mean()/1e5); fact("breakeven_all36_lakh", per_station_value.sum()/1e5)
 fact("list_lost_rev_lakh", (per_station_lost_swaps*avg_rev).sum()/1e5)
+# %% [markdown]
+# ### Cheaper than new cabinets: a summer buffer of charged packs, sized from the data
+# A station runs out when riders arrive faster than packs finish charging. For each of the 36 stations: busy-hour 2W demand in summer 2025 (90th percentile hour), times its charge time when hot vs cool, gives packs tied up charging; a 95% service level on Poisson arrivals gives the stock needed. The extra packs needed in heat is the difference.
+
+# %%
+from scipy.stats import poisson
+dem = sql("""select e.station_id, date_trunc('hour', e.ts) hr, count(*) n from evr e where e.vehicle_class='2W' and e.y=2025 and e.summer
+   and e.gen='Gen1' and e.city in ('Jaipur','Delhi NCR','Hyderabad') group by all""").groupby("station_id").n.quantile(0.9).rename("lam")
+ct = sql("""select h.station_id, avg(avg_charge_minutes) filter (where cabinet_temp_c >= 45) hot, avg(avg_charge_minutes) filter (where cabinet_temp_c < 35) cool
+   from raw_station_hourly_status h join st s using(station_id) where telemetry_status='ok' and s.charger_generation='Gen1' and s.city in ('Jaipur','Delhi NCR','Hyderabad') group by 1""").set_index("station_id")
+bf = ct.join(dem)
+bf["need_hot"] = poisson.ppf(0.95, bf.lam*bf.hot/60); bf["need_cool"] = poisson.ppf(0.95, bf.lam*bf.cool/60)
+bf["extra"] = bf.need_hot - bf.need_cool
+spare = sql("""select s.station_id, quantile_cont(charged_2w_min, 0.1) p10 from raw_station_hourly_status h join st s using(station_id)
+   where telemetry_status='ok' and month(hour_start) in (4,5,6) and year(hour_start)=2025 and s.city in ('Mumbai','Pune','Bengaluru') group by 1""")
+fact("buffer_extra_packs", bf.extra.sum()); fact("buffer_extra_per_station", bf.extra.mean())
+nbx = sql("""select sum((event_type='failed_no_charged_battery')::int) filter (where summer and y=2025) s25, count(*) filter (where summer and y=2025) n25,
+   avg((event_type='failed_no_charged_battery')::int) filter (where not summer) base from evr where gen='Gen1' and city in ('Jaipur','Delhi NCR','Hyderabad')""")
+fact("buffer_avoidable_nobatt", nbx.s25[0] - nbx.base[0]*nbx.n25[0])
+fact("buffer_cool_city_spare_packs", np.floor(spare.p10).clip(lower=0).sum())
+print(f"Extra charged packs for 95% service in heat: {bf.extra.sum():.0f} across {len(bf)} stations (about {bf.extra.mean():.0f} each); "
+      f"cool-city stations keep at least {FACTS['buffer_cool_city_spare_packs']:.0f} packs charged in 90% of summer hours")
+
 cellora_2w_cost = sql("select avg(purchase_cost_inr) c from raw_batteries where supplier<>'Kyron' and pack_type like '2W%'").c[0]
 fact("pack_2w_cost_inr", cellora_2w_cost); fact("kyron_2w_replace_cost_cr", FACTS["packs_Kyron_2W"]*cellora_2w_cost/1e7)
+fact("buffer_cost_cr", FACTS["buffer_extra_packs"]*cellora_2w_cost/1e7)
+fact("buffer_share_of_kyron_replacement_pct", 100*FACTS["buffer_extra_packs"]/FACTS["packs_Kyron_2W"])
 fact("kyron_months_in_service", sql("select date_diff('month', min(ts), max(ts)) + 1 m from evr e join raw_batteries b on b.battery_id=e.battery_out_id where b.supplier='Kyron' and b.pack_type like '2W%'").m[0])
 fact("zipdrop_months_after_amendment", sql("select date_diff('month', date '2024-11-01', max(ts)) + 1 m from evr").m[0])
 fact("kyron_saving_per_1000_lakh", (FACTS["kyron_wear_2w"]-FACTS["other_wear_2w"])*1000/1e5)
@@ -932,7 +1026,7 @@ verdicts = pd.DataFrame([
      f"Pays back in one summer if it costs under ₹{FACTS['breakeven_per_station_lakh']:.1f} lakh per station", "High (back-tested)"),
     ("More batteries", "Yes, but replace, don't add Kyron",
      f"Kyron 2W packs lost {FACTS['soh_loss_per100_Kyron_2W']:.2f} health points per 100 swaps vs {FACTS['soh_loss_per100_Cellora_2W']:.2f} (Cellora); extra wear ₹{FACTS['kyron_excess_wear_cr']:.2f} crore; still issued {int(FACTS['kyron_issued_after_retirement']):,} times after 'retirement'.",
-     "Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek; file a warranty claim on lots KY-2407/08/09", "Head of Fleet & Procurement",
+     f"Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek and claim on lots KY-2407/08/09; each April place {FACTS['buffer_extra_packs']:.0f} charged packs at the 36 hot Gen1 stations, taken from the replacement order or moved from cool-city stations", "Head of Fleet & Procurement",
      f"Each 1,000 swaps on a Cellora/Amptek pack instead of Kyron saves about ₹{(FACTS['kyron_wear_2w']-FACTS['other_wear_2w'])*1000/1e5:.2f} lakh of wear; replacing the 2W fleet costs about ₹{FACTS['kyron_2w_replace_cost_cr']:.2f} crore", "Medium (wear depends on the replacement threshold)"),
     ("Network-wide pricing rollout", "Yes for revenue, not for service",
      f"Pilot vs other cities: {FACTS['did_peak_share_pts']:+.1f} points of swaps in peak hours, {FACTS['did_rev_inr']:+.2f} ₹ revenue per swap, peak-hour failures {FACTS['did_peak_fail_pts']:+.2f} points (not significant).",
