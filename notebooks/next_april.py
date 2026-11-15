@@ -181,10 +181,11 @@ plt.rcParams.update({"figure.figsize": (9, 4.5), "figure.facecolor": "white", "a
                      "axes.edgecolor": "#262626", "axes.linewidth": 0.8, "axes.grid": True, "axes.axisbelow": True,
                      "grid.color": "#e5e5e5", "grid.alpha": 1, "grid.linewidth": 0.8,
                      "font.family": ["Geist", "DejaVu Sans"] if HAVE_FONTS else ["DejaVu Sans"], "font.size": 11,
-                     "text.color": "#262626", "axes.labelcolor": "#5e5e5e", "xtick.color": "#5e5e5e", "ytick.color": "#5e5e5e",
+                     "text.color": "#262626", "axes.labelcolor": "#737373", "xtick.color": "#737373", "ytick.color": "#737373",
                      "xtick.major.size": 0, "ytick.major.size": 0, "axes.titlesize": 14, "axes.titlelocation": "left",
-                     "axes.titlepad": 10, "legend.frameon": False, "axes.prop_cycle": plt.cycler(color=["#c63b17", "#262626", "#a3a3a3", "#2f6f5e"])})
-INK, ACCENT, MUTED, GOOD = "#000000", "#c63b17", "#a3a3a3", "#2f6f5e"
+                     "axes.titlepad": 10, "legend.frameon": False, "axes.prop_cycle": plt.cycler(color=["#0b0b10", "#6e5dc6", "#c9c9c4", "#1b7f46"])})
+# Colours only from the briefing page's system (Brainfish): near-black for the problem, light grey for the rest, green for fixed, lavender as a second series
+INK, ACCENT, MUTED, GOOD = "#000000", "#0b0b10", "#c9c9c4", "#1b7f46"
 
 # %% [markdown]
 # ## 1. Data understanding
@@ -593,7 +594,8 @@ fig.suptitle("The mechanism: heat slows Gen1 charging and turns riders away whet
 savefig(fig, "q3_mechanism")
 
 fig, ax = plt.subplots(figsize=(9, 3.6))
-im = ax.imshow(piv.values, cmap="Reds", aspect="auto")
+from matplotlib.colors import LinearSegmentedColormap
+im = ax.imshow(piv.values, cmap=LinearSegmentedColormap.from_list("bf", ["#ffffff", "#f1eefc", "#6e5dc6", "#352c63"]), aspect="auto")
 ax.set_xticks(range(len(piv.columns)), piv.columns); ax.set_yticks(range(len(piv.index)), piv.index)
 for i in range(piv.shape[0]):
     for j in range(piv.shape[1]):

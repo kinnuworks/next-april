@@ -2,10 +2,7 @@
 """Builds the one-page briefing from outputs/facts.json and outputs/summary_data.json.
 Every number on the page comes from those two files.
 
-Three design directions while the owner picks, each built slot for slot on one reference
-site's measured system (design/refs/<slug>/spec.md and system.md):
-  a.html  Brainfish   b.html  Kelp   c.html  Standards
-index.html is direction A and forwards ?direction=b|c to the other two.
+The look is Brainfish's measured system (design/refs/brainfish/spec.md and system.md), built slot for slot.
 
 Usage: build_site.py
 """
@@ -166,8 +163,7 @@ VIEW_TITLES = json.dumps({"bt": ["Summer 2024 rule vs summer 2025", f"R² {R2} o
 CHECK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5 8.2l2 2 4-4.4"/></svg>'
 
 
-FAVS = {d: "data:image/svg+xml," + __import__("urllib.parse").parse.quote(mark(f, c)) for d, f, c in
-        (("a", "#a3e635", "#6e5dc6"), ("b", "#e7ded3", "#3d7d7d"), ("c", "#eaeaea", "#ff2e00"))}
+FAVS = {"a": "data:image/svg+xml," + __import__("urllib.parse").parse.quote(mark("#a3e635", "#6e5dc6"))}
 
 
 def shell(direction, title, fonts, css, body):
@@ -205,7 +201,7 @@ h1{font-family:var(--display);font-size:var(--fs-display);font-weight:420;line-h
 .small{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 28px;margin:22px 0 0;font-size:14px;color:#262626} .small span{display:inline-flex;align-items:center;gap:8px}
 .small svg{width:16px;height:16px;fill:none;stroke:#262626;stroke-width:1.3}
 .window{max-width:1312px;margin:64px auto 0;background:var(--sheet-2);border:1px solid #262626;border-radius:10px;box-shadow:6px 6px 0 0 #262626;text-align:left;overflow:hidden;display:grid;grid-template-columns:60px 1fr;grid-template-rows:auto 1fr}
-.window-bar{grid-column:1/3;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;font-size:15px;color:#737373}
+.window-bar{grid-column:1/3;display:flex;justify-content:space-between;align-items:center;padding:14px 20px;font-size:15px;color:#5e5e5e}
 .crumb{display:flex;align-items:center;gap:10px} .crumb b{color:#000;font-weight:600} .crumb i{width:1px;height:18px;background:var(--line)} .wm{display:inline-flex;align-items:center;gap:6px} .wm svg{width:22px;height:22px}
 .status{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;background:#ecf8ef;border:1px solid #bce3ca;color:#1b7f46;font-weight:500;font-size:14px} .status i{width:7px;height:7px;border-radius:50%;background:#1b7f46}
 .rail{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0}
@@ -278,146 +274,8 @@ footer{padding:40px 0 64px;color:#737373;font-size:14px;border-top:1px solid var
     return shell("a", "Next April", fonts, css, body)
 
 
-# ---------------------------------------------------------------- B: Kelp
-def page_b():
-    MARK = mark("#e7ded3", "#3d7d7d")
-    fonts = "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:ital,wght@0,400;0,500;0,600;1,400&display=swap"
-    css = """
-:root{ /* Kelp, measured: page #f5f7f9, card #fff, navy ink #1a344a, body #4f4f4f, muted #616a77, teal #3d7d7d, gold #b89c6d, sand #e7ded3, border #dde2e6 */
- --page:#f5f7f9; --sheet:#ffffff; --sheet-2:#f5f7f9; --ink:#1a344a; --ink-2:#4f4f4f; --muted:#616a77; --line:#dde2e6; --line-strong:#1a344a; --r-card:11px; --r-control:7px;
- --hot:#1a344a; --other:#b89c6d; --cool:#3d7d7d; --shade:#e7ded3; --mark-edge:#1a344a;
- --display:'Lora',Georgia,serif; --body:'Inter',system-ui,sans-serif;
-}
-.sand{position:relative;background:#e7ded3;background-image:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.55),transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(255,255,255,.4),transparent 55%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");padding:42px 24px 92px;text-align:center}
-.sand::after{content:"";position:absolute;left:-5%;right:-5%;bottom:-1px;height:70px;background:var(--page);border-radius:50% 50% 0 0/100% 100% 0 0}
-.kick{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#3d7d7d;margin:0 0 16px}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,calc(34px + 15 * ((100vw - 375px) / 1065)),49px);line-height:1.15;letter-spacing:-.02em;color:#1a344a;margin:0 auto;max-width:15em} h1 .l2{display:block;color:#3d7d7d}
-.sub{max-width:33em;margin:18px auto 6px;font-size:16px;color:#4f4f4f} .for{font-style:italic;font-size:14px;color:#616a77;margin:0 0 22px}
-.btn{display:inline-flex;align-items:center;height:42px;padding:0 35px;background:#1a344a;color:#fff;border-radius:7px;font:500 14px var(--body);text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06)}
-.fine{position:relative;z-index:1;font-size:13px;color:#616a77;margin:12px 0 0} .fine a{color:#3d7d7d;text-decoration:none}
-.col{max-width:800px;margin:0 auto;padding:0 20px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;margin:28px 0 42px}
-.stat .v{font-family:var(--display);font-size:32px;font-weight:500;color:#1a344a} .stat .l{font-size:14px;color:#4f4f4f;max-width:16em;margin:4px auto 0}
-.label{text-align:center;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#616a77;margin:0 0 14px}
-.doc{background:#fff;border:1px solid #dde2e6;border-radius:11px;box-shadow:0 4px 12px rgba(0,0,0,.12);padding:28px}
-.doc-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:1px solid #dde2e6;margin-bottom:22px}
-.tagk{display:inline-block;background:#e9eef2;color:#1a344a;border-radius:5px;padding:3px 9px;font-size:13px;font-weight:600} .doc-head small{display:block;font-size:13px;color:#616a77;margin-top:6px} .doc-head span{font-size:13px;color:#616a77}
-.doc h3{font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#1a344a;margin:26px 0 12px}
-.doc p{font-size:15px;color:#4f4f4f;margin:0}
-.take{display:flex;justify-content:space-between;gap:12px;background:#f5f7f9;border-left:3px solid #3d7d7d;border-radius:0 7px 7px 0;padding:10px 14px;font-size:15px;color:#4f4f4f;margin-bottom:8px} .take span{flex:none;font-size:13px;color:#616a77}
-.theme{background:#eff3f3;border-left:3px solid #3d7d7d;border-radius:0 7px 7px 0;padding:14px 16px;margin-bottom:12px} .theme h4{font-family:var(--display);font-size:16px;font-weight:600;color:#1a344a;margin:0 0 4px} .theme p{font-size:14px;margin:0 0 6px}
-.theme svg{background:#fff;border-radius:7px;margin-top:8px}
-.upd{background:#fff;border:1px solid #dde2e6;border-radius:7px;padding:14px 16px;margin-bottom:10px} .upd h4{font-family:var(--display);font-size:15px;font-weight:600;color:#1a344a;margin:6px 0 2px} .upd p{font-size:14px}
-.chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;padding:2px 6px} .chip.no{background:#fef3c7;color:#92400e} .chip.yes{background:#d1fae5;color:#065f46}
-.watch{background:#faf6ef;border-left:3px solid #b89c6d;border-radius:0 7px 7px 0;padding:12px 14px;margin-bottom:8px;font-size:14px;color:#4f4f4f}
-.end{text-align:center;padding:26px 0 6px;border-top:1px solid #dde2e6;margin-top:26px} .end h4{font-family:var(--display);font-size:18px;font-weight:500;color:#1a344a;margin:0 0 12px}
-.band2{background:#fff;padding:56px 0;margin-top:56px} .band2 h2,.band3 h2{font-family:var(--display);font-size:clamp(26px,3vw,35px);font-weight:400;color:#1a344a;text-align:center;margin:0 0 6px} .band2 .lede,.band3 .lede{text-align:center;color:#616a77;font-size:15px;margin:0 0 24px}
-.band3{padding:56px 0}
-details{background:#fff;border:1px solid #dde2e6;border-radius:0;padding:14px 18px;margin-top:-1px} details:first-of-type{border-radius:11px 11px 0 0} details:last-of-type{border-radius:0 0 11px 11px} summary{font-family:var(--display);font-weight:600;color:#1a344a;cursor:pointer} details p{font-size:15px;margin:10px 0 0}
-.close{background:#e7ded3;text-align:center;padding:64px 24px;margin-top:56px} .close h2{font-family:var(--display);font-weight:400;font-size:clamp(28px,3.4vw,40px);line-height:1.15;color:#1a344a;margin:0 0 18px} .close h2 span{display:block;color:#3d7d7d}
-footer{text-align:center;font-size:13px;color:#616a77;padding:28px 0 40px}
-@media (max-width:820px){.stats{grid-template-columns:1fr}}
-"""
-    stats = "".join(f'<div class="stat"><div class="v">{v}</div><div class="l">{html.escape(l)}</div></div>' for v, l in STATS[:3])
-    takes = "".join(f'<div class="take"><div>{t}</div><span>Notebook</span></div>' for t in TAKEAWAYS)
-    upd = "".join(f'<div class="upd"><span class="chip {"no" if v["verdict"].startswith(("No", "Not")) else "yes"}">{html.escape(v["verdict"])}</span><h4>{html.escape(v["proposal"])}</h4><p>{html.escape(v["do this instead"])}</p></div>' for v in VERDICTS)
-    trust_q = "".join(f'<details{" open" if i == 0 else ""}><summary>{q}</summary><p>{a}</p></details>' for i, (q, a) in enumerate([
-        ("Where does the data come from?", "The organisers' synthetic VoltRelay dataset: eight CSV files, every swap attempt from January 2024 to June 2025."),
-        ("How were the data problems handled?", TRUST[0]),
-        ("Can I re-run it?", TRUST[1]),
-        ("Was anything tested out of sample?", TRUST[2]),
-    ]))
-    body = f"""<div class="sand"><p class="kick">An operations briefing for VoltRelay</p>
-<h1>{B36} swap cabinets fail every summer. <span class="l2">Fix them before next April.</span></h1>
-<p class="sub">Next April reads every swap attempt in VoltRelay&rsquo;s EV battery-swap network and shows which stations will fail next summer, why, and what leadership should fund.</p>
-<p class="for">For VoltRelay&rsquo;s network, customer experience and finance leads.</p>
-<a class="btn" href="#brief">Read the briefing</a>
-<p class="fine">Synthetic data from the organisers · Runs top to bottom in Colab · <a href="../report/Next_April_report.pdf">Full report</a></p></div>
-<div class="col"><div class="stats">{stats}</div>
-<p class="label" id="brief">The briefing</p>
-<article class="doc"><div class="doc-head"><div><span class="tagk">Summer 2026</span><small>Every station open both summers</small></div><span>Jan 2024 to Jun 2025</span></div>
-<h3>Executive summary</h3><p>Every April to June, the oldest cabinets in VoltRelay&rsquo;s EV battery-swap network overheat in Jaipur, Delhi NCR and Hyderabad and turn delivery riders away. A rule built from summer 2024 predicted summer 2025 for every station (R² {R2} out of sample). Fund fixing those {B36} cabinets, not more stations or more packs.</p>
-<h3>Key takeaways</h3>{takes}
-<h3>Key themes</h3>
-<div class="theme"><h4>The same stations fail every summer</h4><p>Each bubble is one charger generation in one city; navy is Gen1 in the three hottest cities. Failed attempts, % of attempts.</p><svg id="bt" viewBox="0 0 520 340"></svg></div>
-<div class="theme"><h4>Heat slows only the old cabinets</h4><p>Average minutes to charge a pack, by cabinet temperature.</p><svg id="mech" viewBox="0 0 520 340"></svg></div>
-<div class="theme"><h4>Early failures drive new riders away</h4><p>Churn by the share of a new rider's attempts that failed in their first 14 days.</p><svg id="churn" viewBox="0 0 520 300"></svg></div>
-<h3 id="fund">What to fund</h3>{upd}
-<h3>What to watch</h3><div class="watch">Wave 1, before April 2026: the 23 Gen1 stations in Jaipur and Delhi NCR.</div><div class="watch">Wave 2: the 13 Gen1 stations in Hyderabad.</div><div class="watch">Days forecast at 36°C or more in those cities: steer new riders to Gen2 and Gen3 stations.</div>
-<div class="end"><h4>Want the station-by-station list?</h4><a class="btn" href="#explore">Look up a station</a></div></article></div>
-<div class="band2" id="explore"><div class="col" style="max-width:1100px"><h2>Look up any station</h2><p class="lede">Filter, then pick a station to see its monthly failure rate against its group.</p>{EXPLORER}</div></div>
-<div class="band3" id="trust"><div class="col"><h2>Questions</h2><p class="lede">How the numbers were checked.</p>{trust_q}</div></div>
-<div class="close"><h2>Stop adding stations that fail. <span>Fix the {B36} cabinets that do.</span></h2><a class="btn" href="../report/Next_April_report.pdf">Read the full report</a></div>
-<footer>Synthetic VoltRelay dataset provided by Gradient Learnings. AI coding assistance used; every number checked by the notebook, tests and a number-tracing script.</footer>"""
-    return shell("b", "Next April", fonts, css, body)
-
-
-# ---------------------------------------------------------------- C: Standards
-def page_c():
-    MARK = mark("#eaeaea", "#ff2e00")
-    fonts = "https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap"
-    css = """
-:root{ /* Standards, measured: page #f2f2f2, panels #eaeaea, ink #000, secondary #a1a1a1, rule #d7d7d7, one red #ff2e00; Soehne -> Inter Tight, weight 400 */
- --page:#f2f2f2; --sheet:#eaeaea; --sheet-2:#e0e0e0; --ink:#000000; --ink-2:#000000; --muted:#5c5c5c; --line:#d7d7d7; --line-strong:#000000; --r-card:0px; --r-control:0px;
- --hot:#ff2e00; --other:#a1a1a1; --cool:#000000; --shade:#ff2e00; --mark-edge:#000000;
- --display:'Inter Tight',system-ui,sans-serif; --body:'Inter Tight',system-ui,sans-serif;
-}
-body{font-size:20px;line-height:1.55}
-.wrap{padding:0 30px}
-.nav{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;height:76px;background:#f2f2f2;font-size:20px}
-.nav a{text-decoration:none;color:#000} .logo{font-weight:500;letter-spacing:-.01em} .logo i{font-style:normal;color:#ff2e00} .navr{justify-self:end;display:flex;gap:16px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .hl{font-weight:400;font-size:clamp(28px,calc(28px + 24 * ((100vw - 375px) / 1065)),52px);line-height:1.27;letter-spacing:-.01em;margin:150px 0 40px;max-width:24em} .hl i,.h i,.giant i{font-style:normal;color:#ff2e00}
-.media{display:grid;grid-template-columns:1fr 300px;background:#eaeaea;min-height:520px}
-.media .view{padding:32px 40px;background:#fff;margin:40px 0 40px 40px} .axis-note{font-size:14px;color:#5c5c5c;margin:8px 0 0}
-.side{background:#111;color:#fff;padding:22px 20px;font-size:14px} .side h3{font-size:14px;font-weight:500;margin:0 0 14px;color:#fff;border-bottom:1px solid #333;padding-bottom:12px}
-.side ol{list-style:none;margin:0;padding:0} .side li{padding:10px 0;border-bottom:1px solid #2a2a2a} .side li b{display:block;font-weight:400;color:#fff} .side li span{color:#a1a1a1}
-.side .foot{margin:14px 0 0;color:#fff} .side .foot i{display:none}
-.side .sw{display:flex;gap:6px;margin-bottom:16px} .side .sw a{flex:1;display:grid;place-items:center;height:30px;background:#2a2a2a;color:#fff;text-decoration:none;font-size:14px} .side .sw a.on{background:#fff;color:#000}
-.trusted{display:flex;justify-content:space-between;align-items:flex-end;margin:150px 0 30px} .h{font-size:31px;line-height:1.25;font-weight:400;margin:0} .h.sec2{color:#a1a1a1}
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px} .tile{background:#eaeaea;padding:26px 22px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between}
-.tile .v{font-size:52px;line-height:1;letter-spacing:-.02em} .tile .l{font-size:14px;color:#000}
-.big{font-size:31px;line-height:1.25;max-width:22em;margin:150px 0 0} .big a{color:#a1a1a1;text-decoration:none;display:block}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px} .cell{background:#eaeaea;padding:30px} .cell.full{grid-column:1/3}
-.cell h4{font-size:20px;font-weight:500;margin:0 0 8px} .cell p{font-size:16px;margin:0} .cell .vv{font-size:14px;margin:0 0 10px} .cell .vv.no{color:#000} .cell .vv.no::before{content:"";display:inline-block;width:8px;height:8px;background:#ff2e00;margin-right:8px}
-.cell .vv.yes::before{content:"";display:inline-block;width:8px;height:8px;background:#000;margin-right:8px}
-.cell svg{background:#fff;margin-top:10px}
-.panel{background:#eaeaea;border:0} .tablewrap{background:#eaeaea;border:0} th{background:#eaeaea}
-footer{margin-top:150px;border-top:1px solid #d7d7d7;padding:20px 0 0;font-size:14px}
-.giant{font-size:clamp(80px,17vw,250px);line-height:.9;letter-spacing:-.04em;margin:40px 0 30px} .giant i{font-style:normal;color:#ff2e00}
-@media (max-width:820px){.media{grid-template-columns:1fr} .media .view{margin:16px} .tiles{grid-template-columns:1fr 1fr} .grid2{grid-template-columns:1fr} .cell.full{grid-column:auto} .nav{grid-template-columns:1fr 1fr} .nav .mid{display:none} .hl{margin-top:80px} .trusted,.big{margin-top:80px}}
-"""
-    tiles = "".join(f'<div class="tile"><div class="v">{v}</div><div class="l">{html.escape(l)}</div></div>' for v, l in STATS)
-    cells = "".join(f'<div class="cell"><p class="vv {"no" if v["verdict"].startswith(("No", "Not")) else "yes"}">{html.escape(v["verdict"])}</p><h4>{html.escape(v["proposal"])}</h4><p>{html.escape(v["do this instead"])}</p></div>' for v in VERDICTS)
-    body = f"""<div class="wrap">
-<header class="nav"><a class="logo" href="#">Next April<i>.</i></a><a class="mid" href="#fund">Briefing</a><span class="navr"><a href="../report/Next_April_report.pdf">Report</a><a href="#explore">Stations</a></span></header>
-<h1 class="sr">Next April</h1>
-<p class="hl"><span>The same {B36} cabinets fail every summer<i>.</i></span><br><span>Fix them before April<i>.</i></span></p>
-<div class="media" id="win"><div class="view" data-view="bt"><svg id="bt" viewBox="0 0 520 340"></svg><p class="axis-note">Failed attempts, % of attempts. Each bubble is one charger generation in one city; red is Gen1 in the three hottest cities.</p></div>
-<div class="view" data-view="mech" hidden><svg id="mech" viewBox="0 0 520 340"></svg><p class="axis-note">Average minutes to charge a pack, by cabinet temperature.</p></div>
-<aside class="side"><div class="sw" role="tablist"><a role="tab" class="on" data-show="bt" href="#win">Back-test</a><a role="tab" data-show="mech" href="#win">Heat</a></div>
-<div class="steps" data-for="bt"><h3 id="wtitle">Summer 2024 rule vs summer 2025</h3><ol>{STEPS_BT}</ol><p class="foot">R² {R2} out of sample.</p></div>
-<div class="steps" data-for="mech" hidden><h3>Why they fail</h3><ol>{STEPS_MECH}</ol><p class="foot">Fix the cabinet, not the stock.</p></div></aside></div>
-<div class="trusted"><p class="h">Built from every swap<br>attempt in the network.</p><p class="h sec2">Jan 2024 to Jun 2025</p></div>
-<div class="tiles">{tiles}</div>
-<p class="big">Every April to June, the oldest cabinets in VoltRelay&rsquo;s EV battery-swap network overheat in Jaipur, Delhi NCR and Hyderabad and turn delivery riders away. A rule from summer 2024 named them a year ahead. Leadership should fund fixing those {B36}, not more stations.<a href="../report/Next_April_report.pdf">Read the report</a></p>
-<div class="trusted" id="fund"><p class="h">What to fund<i>.</i></p><p class="h sec2">Four proposals</p></div>
-<div class="grid2">{cells}<div class="cell"><h4>Why it matters for riders</h4><p>Churn by the share of a new rider's attempts that failed in their first 14 days.</p><svg id="churn" viewBox="0 0 520 300"></svg></div></div>
-<div class="trusted"><p class="h">The April 2026 list<i>.</i></p><p class="h sec2">{B36} stations</p></div>
-<div class="tablewrap"><table><tr><th>Wave</th><th>Station</th><th>City</th><th style="text-align:right">Failed, summer 2025</th></tr>{STATIONS_ROWS}</table></div>
-<div class="trusted" id="explore"><p class="h">Look up any station<i>.</i></p><p class="h sec2">150 stations</p></div>{EXPLORER}
-<div class="trusted" id="trust"><p class="h">Why the numbers hold<i>.</i></p><p class="h sec2">Checks</p></div>
-<div class="grid2">{"".join(f'<div class="cell"><p>{t}</p></div>' for t in TRUST)}</div>
-<footer>Synthetic VoltRelay dataset provided by Gradient Learnings. AI coding assistance used; every number checked by the notebook, tests and a number-tracing script.</footer>
-<div class="giant">Next April<i>.</i></div></div>"""
-    return shell("c", "Next April", fonts, css, body)
-
-
 if __name__ == "__main__":
     out = os.path.join(ROOT, "site")
     os.makedirs(out, exist_ok=True)
-    a, b, c = page_a(), page_b(), page_c()
-    route = '<script>(function(){var d=new URLSearchParams(location.search).get("direction");if(d==="b"||d==="c")location.replace(d+".html"+location.search)})()</script>'
-    open(os.path.join(out, "index.html"), "w", encoding="utf-8").write(a.replace("<head>", "<head>" + route, 1))
-    for name, p in (("a", a), ("b", b), ("c", c)):
-        open(os.path.join(out, f"{name}.html"), "w", encoding="utf-8").write(p)
-    print("built site/index.html (A), a.html, b.html, c.html")
+    open(os.path.join(out, "index.html"), "w", encoding="utf-8").write(page_a())
+    print("built site/index.html")
