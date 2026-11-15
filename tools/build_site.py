@@ -170,8 +170,17 @@ function axes(svg,x0,x1,y0,y1,xt,yt,xl,yl,W=520,H=340,m={{l:46,r:14,t:10,b:38}})
    tr.innerHTML=`<td class="mono">${{r.id}}</td><td>${{r.city}}</td><td>${{r.gen}}</td><td>${{r.opened}}</td><td>${{r.site}}</td><td class="num">${{r.s25==null?'not open':r.s25+'%'}}</td>`;
    tr.onclick=()=>{{tb.querySelectorAll('tr').forEach(t=>t.classList.remove('sel'));tr.classList.add('sel');draw(r)}};tb.appendChild(tr)}});
   if(rows.length){{tb.firstChild.classList.add('sel');draw(rows[0])}}
+  else{{tb.innerHTML='<tr><td colspan="6">No station matches these filters. Clear a filter to see stations.</td></tr>';document.getElementById('exs').innerHTML='';
+   document.getElementById('exh').textContent='No station selected';document.getElementById('exp').textContent='Pick a city and generation that have stations.'}}
  }}
- [fc,fg,fa].forEach(e=>e.onchange=render); render();
+ [fc,fg,fa].forEach(e=>e.onchange=render);
+ // Every state can be opened directly: ?state=april | station&id=STN-... | empty | default
+ const q=new URLSearchParams(location.search), st=q.get('state');
+ if(st==='april'){{fa.checked=true}}
+ if(st==='empty'){{fc.value='Mumbai';fg.value='Gen1';fa.checked=true}}
+ render();
+ if(st==='station'&&q.get('id')){{const r=ex.find(x=>x.id===q.get('id'));if(r){{fc.value=r.city;render();const tr=[...tb.querySelectorAll('tr')].find(t=>t.textContent.startsWith(r.id));if(tr)tr.click()}}}}
+ if(st&&st!=='default')document.getElementById('explore').scrollIntoView();
 }})();
 </script></body></html>"""
 
