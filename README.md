@@ -1,5 +1,7 @@
 # Next April
 
+![Next April: a rule from summer 2024 predicted which swap cabinets failed in summer 2025](outputs/charts/readme_hero.png)
+
 The same 36 old battery-swap cabinets will fail again next summer (April to June 2026; the data runs from January 2024 to June 2025). VoltRelay, a battery-swap network for delivery riders in six Indian cities, is choosing between four budget proposals: more stations, more batteries, network-wide peak pricing, and an exclusive deal with its largest fleet partner, ZipDrop. This analysis shows which stations fail, why (the old cabinets overheat; it is not a shortage of stations or packs), and what to fund instead.
 
 One rule from summer 2024 (each station gets the failure rate of its charger generation in its city) predicted each station's summer 2025 failure rate, for the 90 stations open both summers, with an out-of-sample R² of 0.990 (scored station by station; the chart groups stations by generation and city). The 36 Gen1 stations, the oldest cabinet generation, in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer 2025 attempts and produced 51.2% of its failed attempts.

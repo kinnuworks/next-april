@@ -120,14 +120,35 @@ def fact(key, value, nd=None):
     return round(v, nd) if nd is not None else v
 
 def savefig(fig, name):
+    # Titles in the display serif, everything else in the body sans (the briefing page's type)
+    if HAVE_FONTS:
+        for ax_ in fig.axes:
+            for t_ in (ax_.title, ax_._left_title, ax_._right_title):
+                t_.set_fontfamily("Fraunces")
+        if fig._suptitle is not None:
+            fig._suptitle.set_fontfamily("Fraunces"); fig._suptitle.set_fontsize(15)
     fig.tight_layout()
     fig.savefig(os.path.join(CH, f"{name}.png"), dpi=150, bbox_inches="tight")
     plt.show()
     plt.close(fig)
 
-plt.rcParams.update({"figure.figsize": (9, 4.5), "axes.spines.top": False, "axes.spines.right": False,
-                     "axes.grid": True, "grid.alpha": 0.25, "font.size": 11})
-INK, ACCENT, MUTED, GOOD = "#222222", "#c0392b", "#9aa0a6", "#1f6f8b"
+# Chart look: the same type and colours as the one-page briefing (Fraunces titles, Geist text, black ink, one heat red).
+# The fonts ship in assets/fonts (SIL Open Font License); without them the charts fall back to matplotlib's default font.
+from matplotlib import font_manager
+import glob
+_fonts = sorted(glob.glob(os.path.join(ROOT, "assets", "fonts", "*.ttf")))
+HAVE_FONTS = bool(_fonts)
+for _f in _fonts: font_manager.fontManager.addfont(_f)
+if not HAVE_FONTS: print("Brand fonts not found in assets/fonts; charts use the default font.")
+plt.rcParams.update({"figure.figsize": (9, 4.5), "figure.facecolor": "white", "axes.facecolor": "white",
+                     "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
+                     "axes.edgecolor": "#262626", "axes.linewidth": 0.8, "axes.grid": True, "axes.axisbelow": True,
+                     "grid.color": "#e5e5e5", "grid.alpha": 1, "grid.linewidth": 0.8,
+                     "font.family": ["Geist", "DejaVu Sans"] if HAVE_FONTS else ["DejaVu Sans"], "font.size": 11,
+                     "text.color": "#262626", "axes.labelcolor": "#5e5e5e", "xtick.color": "#5e5e5e", "ytick.color": "#5e5e5e",
+                     "xtick.major.size": 0, "ytick.major.size": 0, "axes.titlesize": 14, "axes.titlelocation": "left",
+                     "axes.titlepad": 10, "legend.frameon": False, "axes.prop_cycle": plt.cycler(color=["#c63b17", "#262626", "#a3a3a3", "#2f6f5e"])})
+INK, ACCENT, MUTED, GOOD = "#000000", "#c63b17", "#a3a3a3", "#2f6f5e"
 
 # %% [markdown]
 # ## 1. Data understanding
