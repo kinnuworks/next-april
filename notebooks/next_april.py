@@ -486,6 +486,31 @@ fact("stock_mh_or", mh.oddsratio_pooled); lo_, hi_ = mh.oddsratio_pooled_confint
 fact("stock_mh_strata", len(tabs))
 print(f"Same station, same temperature band ({len(tabs)} strata): odds of a 'no charged pack' failure when the cabinet shows zero packs, "
       f"vs packs in stock: {mh.oddsratio_pooled:.2f} [{lo_:.2f}, {hi_:.2f}]")
+# Within-station test of the heat effect: does the same cabinet fail more in its own hot hours, holding the month and the evening rush fixed?
+# Binomial model on station x month x temperature band x evening cells, one dummy per station, errors clustered by station.
+import statsmodels.api as sm, statsmodels.formula.api as smf
+fe = sql("""with e as (select station_id, date_trunc('hour', ts) hr, count(*) n, sum((not ok)::int) f from evr group by all)
+ select e.station_id, s.charger_generation gen, strftime(e.hr, '%Y-%m') mon, hour(e.hr) between 19 and 21 eve,
+   case when cabinet_temp_c<35 then 'a<35' when cabinet_temp_c<40 then 'b35-40' when cabinet_temp_c<45 then 'c40-45' else 'd45+' end band,
+   sum(n) n, sum(f) f
+ from e join raw_station_hourly_status h on h.station_id=e.station_id and h.hour_start=e.hr join st s on s.station_id=e.station_id
+ where h.telemetry_status='ok' group by all""")
+fe["ok_n"] = fe.n - fe.f
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")  # station dummies absorb generation; the band-by-generation terms are still identified against each generation's <35 band
+    fem = smf.glm("f + ok_n ~ C(station_id) + C(mon) + eve + C(band):C(gen)", data=fe, family=sm.families.Binomial()).fit(
+        cov_type="cluster", cov_kwds={"groups": pd.factorize(fe.station_id)[0]})
+fe_rows = []
+for gname in ["Gen1", "Gen2", "Gen3"]:
+    for b in ["b35-40", "c40-45", "d45+"]:
+        k = f"C(band)[T.{b}]:C(gen)[{gname}]"; lo_, hi_ = np.exp(fem.conf_int().loc[k])
+        fe_rows.append((gname, b[1:], np.exp(fem.params[k]), lo_, hi_))
+fe_tab = pd.DataFrame(fe_rows, columns=["gen", "cabinet temp vs <35", "odds ratio", "lo95", "hi95"])
+print("Same station, same month: odds of a failed attempt in hotter hours vs the station's own hours below 35C\n", fe_tab.round(2).to_string(index=False))
+for _, r in fe_tab[fe_tab["cabinet temp vs <35"] == "45+"].iterrows():
+    fact(f"fe_or_hot_{r.gen}", r["odds ratio"]); fact(f"fe_or_hot_{r.gen}_lo", r.lo95); fact(f"fe_or_hot_{r.gen}_hi", r.hi95)
+fact("fe_stations", fe.station_id.nunique())
 for _, r in tele[tele.band.isin(["<35","45+"])].iterrows():
     fact(f"chg_min_{r.gen}_{'hot' if r.band=='45+' else 'cool'}", r.chg); fact(f"zero_stock_{r.gen}_{'hot' if r.band=='45+' else 'cool'}_pct", 100*r.zero)
 
@@ -1181,6 +1206,21 @@ summary = {
     "stations": april.assign(f25=lambda d: (100*d.f25).round(1))[["wave_2026", "station_id", "city", "f25"]].to_dict("records"),
     "verdicts": verdicts[["proposal", "verdict", "do this instead", "owner", "confidence"]].to_dict("records"),
 }
+# Station explorer data: every station's monthly failure rate, its group's, and its place on the April list
+exm = sql("""select station_id, any_value(city) city, any_value(gen) gen, any_value(wave) wave, any_value(location_type) site_type,
+   strftime(date_trunc('month', ts), '%Y-%m') mon, count(*) n, 1-avg(ok::int) f from evr group by station_id, strftime(date_trunc('month', ts), '%Y-%m') order by 1, 6""")
+grm = sql("""select gen, city, strftime(date_trunc('month', ts), '%Y-%m') mon, 1-avg(ok::int) f from evr group by 1, 2, 3""")
+months = sorted(exm.mon.unique())
+listed = dict(zip(april.station_id, april.wave_2026))
+summer25 = sql("select station_id, 1-avg(ok::int) f from evr where summer and y=2025 group by 1").set_index("station_id").f
+summary["months"] = months
+summary["groups_monthly"] = {f"{g}|{c}": [round(100*v, 2) if not np.isnan(v) else None for v in d.set_index("mon").f.reindex(months)]
+                             for (g, c), d in grm.groupby(["gen", "city"])}
+summary["explorer"] = [{"id": sid, "city": d.city.iloc[0], "gen": d.gen.iloc[0], "opened": str(d.wave.iloc[0]), "site": str(d.site_type.iloc[0]),
+                        "april": int(listed[sid]) if sid in listed else 0,
+                        "s25": round(100*summer25.get(sid, np.nan), 1) if sid in summer25 else None,
+                        "m": [round(100*v, 2) if not np.isnan(v) else None for v in d.set_index("mon").f.reindex(months)]}
+                       for sid, d in exm.groupby("station_id")]
 with open(os.path.join(OUT, "summary_data.json"), "w") as f:
     json.dump(summary, f, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
 

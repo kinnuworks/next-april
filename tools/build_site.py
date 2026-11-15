@@ -50,7 +50,8 @@ def page(theme):
         for v in D["verdicts"])
     rows = "".join(f'<tr><td>{s["wave_2026"]}</td><td class="mono">{s["station_id"]}</td><td>{s["city"]}</td><td class="num">{s["f25"]}%</td></tr>'
                    for s in D["stations"])
-    data_js = json.dumps({"groups": D["groups"], "mechanism": D["mechanism"], "churn": D["churn"]})
+    data_js = json.dumps({"groups": D["groups"], "mechanism": D["mechanism"], "churn": D["churn"],
+                          "months": D["months"], "gm": D["groups_monthly"], "ex": D["explorer"]})
     return f"""<!doctype html><html lang="en" data-theme="{theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Next April</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="{FONTS}" rel="stylesheet">
 <style>
@@ -73,6 +74,8 @@ section{{margin-top:44px}} h2{{font-family:var(--display);font-weight:600;font-s
 .panel{{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;background-image:var(--grid)}}
 .panel h3{{margin:0 0 4px;font-size:15px}} .panel p{{margin:0 0 10px;color:var(--muted);font-size:13px}}
 svg{{width:100%;height:auto;display:block}} svg text{{fill:var(--muted);font-family:var(--mono);font-size:11px}}
+.filters{{display:flex;flex-wrap:wrap;gap:10px 22px;margin:0 0 14px;font-size:14px}} .filters select{{font:inherit;margin-left:6px;padding:4px 6px;background:var(--card);color:var(--ink);border:1px solid var(--line)}}
+.tablewrap.ex{{max-height:360px;overflow:auto}} #ext td,#ext th{{white-space:nowrap}} #ext tbody tr{{cursor:pointer}} #ext tbody tr:hover,#ext tbody tr.sel{{background:var(--card)}} #ext tbody tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--heat)}}
 .verdicts{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}}
 .verdict{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--card)}}
 .verdict .p{{font-weight:600}} .verdict .vv{{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:8px 0}}
@@ -103,6 +106,13 @@ footer{{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid v
 <section class="two"><div><h2>The April 2026 list</h2><p class="lede">Wave 1: Gen1 in Jaipur and Delhi NCR. Wave 2: Gen1 in Hyderabad. Summer 2025 failure rate per station.</p>
 <div class="tablewrap"><table><tr><th>Wave</th><th>Station</th><th>City</th><th style="text-align:right">Failed, summer 2025</th></tr>{rows}</table></div></div>
 <div><h2>Why it matters for riders</h2><p class="lede">New riders' churn by the share of their swap attempts that failed in their first 14 days.</p><div class="panel"><svg id="churn" viewBox="0 0 520 300"></svg></div></div></section>
+
+<section id="explore"><h2>Look up any station</h2><p class="lede">Filter, then pick a station to see its monthly failure rate against the average for its charger generation in its city. Summer months are shaded.</p>
+<div class="filters"><label>City <select id="fc"><option value="">All</option></select></label>
+<label>Generation <select id="fg"><option value="">All</option></select></label>
+<label><input type="checkbox" id="fa"> Only the April 2026 list</label></div>
+<div class="two"><div class="tablewrap ex"><table id="ext"><thead><tr><th>Station</th><th>City</th><th>Gen</th><th>Opened</th><th>Site</th><th style="text-align:right">Failed, summer 2025</th></tr></thead><tbody></tbody></table></div>
+<div class="panel"><h3 id="exh">Pick a station</h3><p id="exp">Click a row in the table.</p><svg id="exs" viewBox="0 0 520 300"></svg></div></div></section>
 
 <section><h2>Why these numbers can be trusted</h2><div class="trust">
 <div>Every documented data issue checked, plus {n("issues_undocumented", 0)} the documentation does not mention, each with rows affected and its effect on a result.</div>
@@ -136,6 +146,33 @@ function axes(svg,x0,x1,y0,y1,xt,yt,xl,yl,W=520,H=340,m={{l:46,r:14,t:10,b:38}})
   el('rect',{{x,y:H-40-h,width:bw-20,height:h,fill:(i>=2)?css('--heat'):css('--grey'),rx:2}},s);
   const v=el('text',{{x:x+(bw-20)/2,y:H-46-h,'text-anchor':'middle'}},s);v.textContent=c.pct+'%';v.style.fill=css('--ink');v.style.fontSize='13px';
   el('text',{{x:x+(bw-20)/2,y:H-22,'text-anchor':'middle'}},s).textContent=c.band==='none'?'no failures':c.band+' failed';}});}})();
+
+(function(){{
+ const ex=DATA.ex, M=DATA.months, fc=document.getElementById('fc'), fg=document.getElementById('fg'), fa=document.getElementById('fa'), tb=document.querySelector('#ext tbody');
+ [...new Set(ex.map(r=>r.city))].sort().forEach(c=>fc.add(new Option(c,c)));
+ [...new Set(ex.map(r=>r.gen))].sort().forEach(g=>fg.add(new Option(g,g)));
+ function draw(r){{
+  const s=document.getElementById('exs'); s.innerHTML='';
+  const g=DATA.gm[r.gen+'|'+r.city]||[]; const vals=r.m.concat(g).filter(v=>v!=null);
+  const top=Math.ceil(Math.max(...vals,5)/5)*5; const yt=[]; for(let v=0;v<=top;v+=5)yt.push(v);
+  const n=M.length; const [X,Y]=axes(s,0,n-1,0,top,[],yt,null,null,520,300,{{l:40,r:12,t:10,b:30}});
+  M.forEach((m,i)=>{{const mo=+m.slice(5);if([4,5,6].includes(mo))el('rect',{{x:X(i)-((X(1)-X(0))/2),y:10,width:X(1)-X(0),height:260,fill:css('--heat'),opacity:.08}},s);
+   if(mo===1||i===0)el('text',{{x:X(i),y:290,'text-anchor':'middle'}},s).textContent=m}});
+  const line=(arr,col,w,dash)=>{{const p=arr.map((v,i)=>v==null?null:[X(i),Y(v)]).filter(Boolean);if(p.length)el('polyline',{{points:p.map(q=>q.join(',')).join(' '),fill:'none',stroke:col,'stroke-width':w,'stroke-dasharray':dash||''}},s)}};
+  line(g,css('--grey'),2,'4 3'); line(r.m,css('--heat'),2.5);
+  document.getElementById('exh').textContent=r.id+' · '+r.gen+' · '+r.city;
+  document.getElementById('exp').textContent='Red: this station, % of attempts failed each month. Dashed: all '+r.gen+' stations in '+r.city+'.'+(r.april?' On the April 2026 list, wave '+r.april+'.':'');
+ }}
+ function render(){{
+  const rows=ex.filter(r=>(!fc.value||r.city===fc.value)&&(!fg.value||r.gen===fg.value)&&(!fa.checked||r.april)).sort((a,b)=>(b.s25??-1)-(a.s25??-1));
+  tb.innerHTML='';
+  rows.forEach(r=>{{const tr=document.createElement('tr');if(r.april)tr.className='hot';
+   tr.innerHTML=`<td class="mono">${{r.id}}</td><td>${{r.city}}</td><td>${{r.gen}}</td><td>${{r.opened}}</td><td>${{r.site}}</td><td class="num">${{r.s25==null?'not open':r.s25+'%'}}</td>`;
+   tr.onclick=()=>{{tb.querySelectorAll('tr').forEach(t=>t.classList.remove('sel'));tr.classList.add('sel');draw(r)}};tb.appendChild(tr)}});
+  if(rows.length){{tb.firstChild.classList.add('sel');draw(rows[0])}}
+ }}
+ [fc,fg,fa].forEach(e=>e.onchange=render); render();
+}})();
 </script></body></html>"""
 
 if __name__ == "__main__":

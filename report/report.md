@@ -29,6 +29,18 @@ VoltRelay runs unmanned battery-swap cabinets for gig and logistics riders in si
 
 The data has one row per swap attempt, completed or not. An attempt fails when the cabinet has no charged pack (failed_no_charged_battery), the rider gives up in the queue (abandoned_queue), the rider cancels (cancelled_by_rider) or the system errors (failed_system_error). A failure rate here is all non-completed attempts divided by all attempts; in summer, 64.0% of failures at Gen1 stations and 56.8% at Gen3 stations were "no charged battery". Five changes happened during the period, and each has to be separated from the others: two expansion waves, a base price change in July 2024, a peak/off-peak pilot in Bengaluru and Pune from October 2024, the Kyron supplier, and the ZipDrop contract amendment on 1 November 2024.
 
+How each metric is defined, so every number below means one thing:
+
+| Metric | Definition |
+|---|---|
+| Failure rate | Attempts not completed (no charged pack, abandoned queue, rider cancelled, system error) divided by all attempts |
+| Summer | April to June, the months when failures spike in both years |
+| New rider | Signed up from January 2024, first attempt before May 2025, so everyone has 60 days of follow-up |
+| Churned | No swap attempt on days 30 to 60 after the rider's first attempt |
+| Early failure rate | Share of a new rider's attempts that failed in their first 14 days |
+| Contribution margin per swap | Revenue charged, minus grid energy, battery wear (pack cost spread over its life to 70% health) and station rent and upkeep, divided by completed swaps |
+| Hot cabinet hour | A station-hour whose telemetry shows the cabinet at 45°C or more inside |
+
 ## Data Cleaning
 
 We checked every documented issue and found six the documentation does not mention. Every issue, the rows it affects, what we did and what it changes is in the notebook (section 2) and in `outputs/cleaning_table.csv`. The ones that change a result:
@@ -79,7 +91,9 @@ Outside April to June, all three charger generations fail on about 4.3% of attem
 ![Summer failure rate by charger generation and city](../outputs/charts/q3_gen_city.png)
 
 ### 2. Cabinet telemetry shows why
-At a cabinet temperature of 45°C or more, a Gen1 cabinet's average charge time rises from 88 to 156 minutes and it has no charged 2W pack in 37.3% of those hours (0.6% when cool). Gen3 cabinets reach the same temperatures and still charge in 43 minutes. In station-hours with no charged pack, 11.6% of attempts fail, against 5.9% when packs are in stock, which makes empty shelves look like the cause. They are not. Compare hours at the same station and the same cabinet temperature (145 station-by-temperature groups) and a Gen1 cabinet showing zero charged 2W packs is slightly less likely to fail a 2W rider for "no charged pack" (odds ratio 0.82, 95% interval 0.79 to 0.86). At 45°C or more, 9.27% of 2W attempts fail that way in empty hours against 10.85% in stocked ones, and 94.9% of these failures happen in hours when the cabinet showed charged 2W packs. Empty shelves and failures share a cause, the heat; adding packs to a cabinet that is too hot to serve them does not help. Summer failures peak in the evening rush (10.9% from 7 to 10 PM against 7.5% the rest of the day), after a hot day has drained stock. The 45°C point matches the upper charging limit commonly given for lithium-ion cells (0°C to 45°C, Battery University; outside context, not from the data).
+At a cabinet temperature of 45°C or more, a Gen1 cabinet's average charge time rises from 88 to 156 minutes and it has no charged 2W pack in 37.3% of those hours (0.6% when cool). Gen3 cabinets reach the same temperatures and still charge in 43 minutes. In station-hours with no charged pack, 11.6% of attempts fail, against 5.9% when packs are in stock, which makes empty shelves look like the cause. They are not. Compare hours at the same station and the same cabinet temperature (145 station-by-temperature groups) and a Gen1 cabinet showing zero charged 2W packs is slightly less likely to fail a 2W rider for "no charged pack" (odds ratio 0.82, 95% interval 0.79 to 0.86). At 45°C or more, 9.27% of 2W attempts fail that way in empty hours against 10.85% in stocked ones, and 94.9% of these failures happen in hours when the cabinet showed charged 2W packs. Empty shelves and failures share a cause, the heat; adding packs to a cabinet that is too hot to serve them does not help.
+
+The heat effect also holds when each station is compared only with itself. A binomial model with one term per station, plus the month and the evening rush, clustered by station across all 150 stations, gives a Gen1 cabinet 1.45 times the odds of a failed attempt in its own hours at 45°C or more against its own hours below 35°C (95% interval 1.30 to 1.60). For Gen3 the same comparison gives 0.71 (0.64 to 0.78), and for Gen2 0.88 (0.79 to 0.99): newer cabinets do not get worse in the heat. So it is not that Gen1 happens to sit at worse sites; the same Gen1 cabinet fails more when it is hot. Summer failures peak in the evening rush (10.9% from 7 to 10 PM against 7.5% the rest of the day), after a hot day has drained stock. The 45°C point matches the upper charging limit commonly given for lithium-ion cells (0°C to 45°C, Battery University; outside context, not from the data).
 
 The city weather data gives operations a forecast trigger. On days up to 34°C, Gen1 stations fail on 4.3% of attempts; above 38°C, on 19.4%, while Gen3 stays at 5.9%. The jump starts at a maximum temperature of 36°C, and in summer 2025 Jaipur had 80 such days, Delhi NCR 81, Hyderabad 60 and Mumbai none. City-wide grid outages add 2.1 points to a day's failure rate for every outage hour.
 
@@ -88,7 +102,7 @@ The city weather data gives operations a forecast trigger. On days up to 34°C, 
 ![Cabinet temperature, charge time, empty cabinets and failed attempts](../outputs/charts/q3_mechanism.png)
 
 ### 3. One rule predicts next summer, and expansion did not reach it
-Give each station the summer 2024 failure rate of its charger generation in its city (leaving the station itself out), and you predict its summer 2025 rate with an out-of-sample R² of 0.990 and a typical error of 0.53 points, across the 90 of 150 stations open both summers. The network average predicts nothing (R² -0.003). Each station's own 2024 rate does almost as well (0.985), but within a group it adds no reliable signal (rank correlation 0.13, 95% interval -0.10 to 0.35), so the fix is the whole group, which the rule also covers for stations with no history. The 36 Gen1 stations in Jaipur, Delhi NCR and Hyderabad failed on 15.9% of summer attempts in 2024 and 15.6% in 2025, while their summer traffic grew from 172,800 to 267,903 attempts. The other 114 stations failed on 5.6% in summer 2025. The three hottest cities had 73% of summer 2024's failures but received 50% of the new stations.
+Give each station the summer 2024 failure rate of its charger generation in its city (groups fixed by hardware and location, not by results; the station itself is left out), and you predict its summer 2025 rate with an out-of-sample R² of 0.990 and a typical error of 0.53 points, across the 90 of 150 stations open both summers. The network average predicts nothing (R² -0.003). Each station's own 2024 rate does almost as well (0.985), but within a group it adds no reliable signal (rank correlation 0.13, 95% interval -0.10 to 0.35), so the fix is the whole group, which the rule also covers for stations with no history. The 36 Gen1 stations in Jaipur, Delhi NCR and Hyderabad failed on 15.9% of summer attempts in 2024 and 15.6% in 2025, while their summer traffic grew from 172,800 to 267,903 attempts. The other 114 stations failed on 5.6% in summer 2025. The three hottest cities had 73% of summer 2024's failures but received 50% of the new stations.
 
 On the brief's question of whether the waves went where riders needed them or where sites were easiest: Wave 1 mostly took easy sites, with 27 of its 30 stations at highway fuel pumps or in residential areas, the location types with the least demand; Wave 2 did better, putting 14 of 30 in markets. New stations handle 55.2 (Wave 1) and 60.5 (Wave 2) completed swaps a day against 69.2 at launch stations. Several did open near the failing cabinets, a median 1.22 km away, but they took no load off them: the 12 hot Gen1 stations with a new station within 1 km grew their summer traffic by 55.9% and failed on 16.4% of attempts, against 52.5% growth and 15.3% failures for the 24 farther away.
 
@@ -131,7 +145,7 @@ The chart for each insight sits next to it above. These cover the network as a w
 ## Business Findings
 
 ### What summer failures at Gen1 put at stake
-Gen1 had 52,987 extra failed attempts across the two summers. Within 2 hours, 92% of riders whose swap failed had not completed a swap anywhere; within 24 hours, 44% still had not. Counting only those, about ₹15.0 lakh of revenue was at risk. The churn model attributes 98 lost new riders to early failures that happened at Gen1 in summer, worth ₹4.8 to ₹19.4 lakh of revenue at 3 to 12 months each.
+Gen1 had 52,987 extra failed attempts across the two summers. Within 2 hours, 92% of riders whose swap failed had not completed a swap anywhere; within 24 hours, 44% still had not. Counting only those, about ₹15.0 lakh of revenue was at risk. Of the 330 new riders the churn model attributes to early failures across the network, 98 are riders whose early failures happened at Gen1 stations in summer, worth ₹4.8 to ₹19.4 lakh of revenue at 3 to 12 months each.
 
 ### Margin per swap
 Revenue per swap rose (₹59.89 to ₹64.77 between the first halves of 2024 and 2025), energy per swap fell (₹21.57 to ₹18.14) and station costs per swap fell with scale (₹18.06 to ₹11.68). Battery wear per swap rose from ₹38.64 to ₹54.16 when Kyron packs entered service. Contribution margin per swap was negative in both halves; whether it fell further depends on when a pack must be replaced, which the data does not say. At 70% health it went from -₹18.39 to -₹19.21; at 60% it improved; at 80% it fell further. Wear per swap rose under every threshold.
@@ -150,6 +164,12 @@ Money at stake, by kind: extra battery wear (a cost) ₹4.35 crore; ZipDrop's am
 
 ### The April 2026 list
 Wave 1 is the 23 Gen1 stations in Jaipur and Delhi NCR, with 21,265 excess failed attempts in summer 2025. Wave 2 is the 13 Gen1 stations in Hyderabad, with 9,086. All are original launch stations. The four Gen1 stations in Pune failed on 7.8% of summer attempts and come next if budget allows. The full list, with each station's summer and non-summer failure rates, is in `outputs/april_2026_list.csv`.
+
+### The plan to next April
+- **July to September 2025:** stop issuing retired Kyron packs and start the replacement order and the claim on the three lots; get quotes for Gen3 cabinets and for a cooling retrofit, and accept a retrofit only if a test cabinet holds Gen3's charge time at 45°C or more.
+- **October to December 2025:** fix the 23 Gen1 cabinets in Jaipur and Delhi NCR (wave 1); reopen the ZipDrop contract before any exclusive is discussed.
+- **January to March 2026:** fix the 13 in Hyderabad (wave 2); switch on in-app steering for new riders on days forecast at 36°C or more; if leadership wants the pack test, place its packs at the 6 randomly picked stations.
+- **April to June 2026:** measure, station by station, against the stations not yet fixed and against summer 2025.
 
 ### How to tell it worked
 Use a forecast maximum of 36°C in Jaipur, Delhi NCR or Hyderabad as the trigger for steering new riders. Track, from April 2026, the summer failure rate at each fixed station against those not yet fixed (target: near the 5.6% of the other stations), average charge time at 45°C or more (target: Gen3's 43 minutes), the share of new riders with any failed swap in their first 14 days, and Kyron's share of packs issued (target: zero).
