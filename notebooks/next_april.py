@@ -224,7 +224,8 @@ cs = sql("""select case when resolution_hours<4 then 'a <4h' when resolution_hou
 naive = sql("select avg(csat_score) v from raw_support_tickets").v[0]
 w = (cs.n * cs.csat).sum() / cs.n.sum()
 fact("csat_naive", naive); fact("csat_reweighted", w)
-issue("CSAT mostly missing, not at random", "yes", int(sql("select count(*) n from raw_support_tickets where csat_score is null").n[0]),
+fact("csat_missing", sql("select count(*) n from raw_support_tickets where csat_score is null").n[0])
+issue("CSAT mostly missing, not at random", "yes", int(FACTS["csat_missing"]),
       "Re-weighted CSAT by resolution-time bucket",
       f"Scores recorded on {100*cs.has.iloc[0]:.0f}% of <4h tickets vs {100*cs.has.iloc[-1]:.0f}% of >24h ones, but scores barely differ by resolution time ({', '.join(f'{v:.2f}' for v in cs.csat)}), so naive {naive:.2f} vs re-weighted {w:.2f}: the bias is real but small here.")
 
@@ -297,6 +298,7 @@ print(f"{int(n_clean.n[0]):,} attempts after removing test stations; {100*n_clea
 
 # %%
 EOL_SOH = 70.0
+for e_ in (60, 70, 80): fact(f"eol_option_{e_}", e_)
 con.execute("""create or replace table batt as
 with use as (select battery_out_id battery_id, count(*) swaps_served, min(ts) first_use from ev2 where ok group by 1)
 select b.*, u.swaps_served, u.first_use,
@@ -580,7 +582,10 @@ ind = part[part.partner == "Independent riders"].iloc[0]; fact("indep_rev_2025",
 zz = sql("""select ts >= '2024-11-01' after, avg(revenue) rev from evr where ok and partner_id='FP-03' and ts between '2024-08-01' and '2025-01-31' group by 1 order by 1""")
 fact("zipdrop_rev_before", zz.rev.iloc[0]); fact("zipdrop_rev_after", zz.rev.iloc[1])
 zip_lost = (zz.rev.iloc[0] - zz.rev.iloc[1]) * sql("select count(*) n from evr where ok and partner_id='FP-03' and ts >= '2024-11-01'").n[0]
-fact("zipdrop_amendment_cost_lakh", zip_lost/1e5)
+fact("zipdrop_amendment_cost_lakh", zip_lost/1e5); fact("zipdrop_rev_drop", zz.rev.iloc[0] - zz.rev.iloc[1])
+zd = sql("select discount_pct, discount_pct_after_amendment from raw_fleet_partners where partner_name='ZipDrop'")
+fact("zipdrop_discount_before_pct", zd.discount_pct[0]); fact("zipdrop_discount_after_pct", zd.discount_pct_after_amendment[0])
+fact("did_peak_share_pts_abs", abs(FACTS["did_peak_share_pts"]))
 print(f"ZipDrop revenue per swap {zz.rev.iloc[0]:.2f} -> {zz.rev.iloc[1]:.2f}; the amendment gave away ₹{zip_lost/1e5:.1f} lakh to Jun 2025")
 fig, ax = plt.subplots(figsize=(9, 4.6))
 pp = part.sort_values("cm")
@@ -768,6 +773,8 @@ need = need.merge(waves, on="city"); need["share_need"] = 100*need.fails_s24/nee
 print(need.round(1).to_string(index=False))
 for _, r in need.iterrows(): fact(f"share_need_{r.city.replace(' ','_')}_pct", r.share_need); fact(f"share_new_{r.city.replace(' ','_')}_pct", r.share_new)
 fact("new_stations_total", need.new_stations.sum())
+hot3 = need.city.isin(["Jaipur", "Delhi NCR", "Hyderabad"])
+fact("hot3_share_need_pct", need[hot3].share_need.sum()); fact("hot3_share_new_pct", need[hot3].share_new.sum())
 # relief: did attempts at the top-20 stations fall after nearby new stations opened?
 rel = sql(f"""select y, sum((not ok)::int) f, count(*) n from evr where summer and station_id in ({",".join("'"+s+"'" for s in top20.station_id)}) group by 1 order by 1""")
 print(rel.to_string(index=False))
@@ -791,6 +798,8 @@ fact("breakeven_per_station_lakh", per_station_value.mean()/1e5)
 fact("list_lost_rev_lakh", (per_station_lost_swaps*avg_rev).sum()/1e5)
 cellora_2w_cost = sql("select avg(purchase_cost_inr) c from raw_batteries where supplier<>'Kyron' and pack_type like '2W%'").c[0]
 fact("pack_2w_cost_inr", cellora_2w_cost); fact("kyron_2w_replace_cost_cr", FACTS["packs_Kyron_2W"]*cellora_2w_cost/1e7)
+fact("kyron_months_in_service", sql("select date_diff('month', min(ts), max(ts)) + 1 m from evr e join raw_batteries b on b.battery_id=e.battery_out_id where b.supplier='Kyron' and b.pack_type like '2W%'").m[0])
+fact("zipdrop_months_after_amendment", sql("select date_diff('month', date '2024-11-01', max(ts)) + 1 m from evr").m[0])
 verdicts = pd.DataFrame([
     ("More stations", "Not as proposed",
      f"The {int(FACTS['new_stations_total'])} stations opened in the two waves were spread evenly; the three hottest cities had {FACTS['share_need_Jaipur_pct']+FACTS['share_need_Delhi_NCR_pct']+FACTS['share_need_Hyderabad_pct']:.0f}% of summer-2024 failures but got {FACTS['share_new_Jaipur_pct']+FACTS['share_new_Delhi_NCR_pct']+FACTS['share_new_Hyderabad_pct']:.0f}% of new stations. The 2024 worst 20 failed at {FACTS['top20_f24_pct']:.1f}% then {FACTS['top20_f25_pct']:.1f}%.",

@@ -1,0 +1,12 @@
+claim,as_reported,alternative,alternative_value
+Margin per swap H1 2024 -> H1 2025 (₹),-18.39 -> -19.21,battery replaced at 60% health,-8.53 -> -5.39
+Battery wear per swap H1 2024 -> H1 2025 (₹),38.64 -> 54.16,battery replaced at 60% health,28.78 -> 40.34
+Margin per swap H1 2024 -> H1 2025 (₹),-18.39 -> -19.21,battery replaced at 80% health,-38.54 -> -47.45
+Battery wear per swap H1 2024 -> H1 2025 (₹),38.64 -> 54.16,battery replaced at 80% health,58.79 -> 82.40
+Back-test rank agreement,Spearman 0.948,Kendall tau,0.798
+2024 top-20 share of 2025 failures / attempts,30.6% / 15.0%,top 15,23.1% / 11.4%
+2024 top-20 share of 2025 failures / attempts,30.6% / 15.0%,top 25,36.8% / 18.3%
+Gen1 vs Gen3 Apr-Jun failure,12.9% vs 5.1%,only 'no charged battery' failures,8.3% vs 2.9%
+Completion rate,94.02%,test stations kept,94.04%
+Worst summer hour for failures,21:00,firmware clock not corrected,21:00
+Churn: >20% early failures vs none,33.2% vs 13.3%,churn window days 30-90,26.1% vs 11.3%

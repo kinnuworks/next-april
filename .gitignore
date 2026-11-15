@@ -20,3 +20,4 @@ data/
 .claude/
 __pycache__/
 outputs/cache/
+outputs/notebook_prose.md

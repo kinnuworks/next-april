@@ -1,0 +1,17 @@
+issue,documented,rows_affected,decision,effect
+Test stations STN-TST-01/02,"yes, as 'a small number of zero-value transactions at unusual hours'",62031,Excluded from all network analysis,"Docs understate it: 62,031 rows charging ₹39.3 lakh, busiest at 19:00, not zero-value. Keeping them would add ₹39.3 lakh of revenue that never happened."
+Firmware v3.2.0 clock 5h30 early (10 Mar-14 Apr 2025),yes,139490,Added 5h30 to those timestamps,"Share of these swaps logged between midnight and 5 AM falls from 15.6% to 2.9% (rest of data: 3.0%), so hour-of-day results are right."
+Offline-sync near-duplicates,yes,1,Searched three ways within 3 minutes; nothing to remove,"Matches by key: rider+station+returned pack: 1; rider+station+issued pack: 51; rider+station, same outcome: 5,720. The 591,114 offline_batch rows are not duplicates in this export, so all are kept."
+Non-completed attempts,yes,231204,"Kept for service and churn analysis; excluded from revenue, energy and range","They carry ₹0 of charges, so revenue is unaffected; leaving them out of failure rates would hide every failure."
+km_since_last_swap negative or > 300 km,yes,15526,Set to missing (odometer resets),Mean km per swap moves from 62.0 to 61.5.
+soc_out_pct above 100,yes,3698,Capped at 100 (sensor drift),Affects delivered-charge averages by less than 0.1 point.
+riders.home_city spellings,yes,585,Mapped 21 spellings to 6 cities,585 riders would otherwise sit in 15 phantom cities.
+Telemetry partial or missing,yes,46371,"Those station-hours left out of telemetry averages, never treated as zero",Gaps hit 10.9% of hours at poor-connectivity stations vs 1.7% elsewhere.
+"CSAT mostly missing, not at random",yes,28871,Re-weighted CSAT by resolution-time bucket,"Scores recorded on 43% of <4h tickets vs 22% of >24h ones, but scores barely differ by resolution time (3.59, 3.55, 3.61), so naive 3.56 vs re-weighted 3.56: the bias is real but small here."
+Ticket category not verified,yes,15271,Re-tagged from comment text (section 6),See the battery-complaint recount in section 6.
+payment_mode is the same on every row,no (docs list upi / wallet / prepaid / partner_invoice),3877013,Not used,"All 3,877,013 rows say 'partner_invoice', including independent riders, so payment channel cannot be analysed."
+battery_in_id rarely missing,no (docs: 'often missing'),28282,Read as null where blank,"Only 28,282 blanks, and failed attempts still record a returned pack."
+Packs issued before their commission_date,no,1011084,"Pack age measured from first observed swap, not the ledger date","Median 126 days early, so ledger dates cannot be used for battery age."
+Packs issued after their retired_date,no,36277,Kept; reported as an operations finding,"Kyron packs marked retired on 15 Jun 2025 were handed to riders 36,277 more times by 30 Jun."
+PARTNER charges differ from list minus discount,no,249669,Used amount_charged_inr as revenue,Average gap +₹7.96; consistent with peak surcharges billed to partners.
+Swaps before the station's commissioned_date,no,24,Kept (too few to matter),No effect on any rate at one decimal.

@@ -1,19 +1,34 @@
 #!/usr/bin/env bash
-# The checks that prove this project works. The session fills these in at step 5
-# (HACKATHON.md): tests, typecheck, and the end-to-end script that walks the demo
-# path in a real browser against the real sponsor API, recording a screen video of
-# it (the rough cut for the demo video). The Stop hook in
-# .claude/settings.json runs this file whenever the session tries to finish, and
-# sends it back to work while anything here fails.
-#
-# Keep it fast enough to run often (a few minutes at most), and never make a check
-# pass by skipping, weakening or special-casing it.
+# Checks that prove the submission works. Run by the Stop hook.
+# 1. The notebook runs top to bottom in a fresh kernel from the organiser's data and
+#    rewrites outputs/facts.json (problem statement: "Should run top to bottom without errors").
+# 2. Independent tests re-derive the headline numbers with their own queries.
+# 3. Every number in the report, the notebook's prose, and any README / video script /
+#    LinkedIn draft that exists traces to facts.json.
+# 4. The report has the sections the problem statement asks for and an AI-use disclosure;
+#    the video (once it exists) is at most 3:00.
 set -euo pipefail
 cd "$(dirname "$0")"
+PY=.venv/bin/python
 
-# Fill in at step 5, for example:
-# npm run typecheck
-# npm test
-# npx playwright test e2e/demo-path.spec.ts   (with video: 'on')
+NA_ROOT=$PWD tools/run_notebook.sh notebooks/next_april.ipynb 1800
+# run_notebook executes a copy; refresh the saved outputs only through the same path the judges use
+NA_ROOT=$PWD .venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=1800 notebooks/next_april.ipynb >/dev/null 2>&1
 
-echo "check.sh: no checks yet (filled in at step 5)"
+$PY -m pytest -q tests
+
+$PY -c "
+import json,sys
+nb=json.load(open('notebooks/next_april.ipynb'))
+open('outputs/notebook_prose.md','w').write('\n'.join(''.join(c['source']) for c in nb['cells'] if c['cell_type']=='markdown'))
+"
+texts=(report/report.md outputs/notebook_prose.md)
+for f in README.md video/script.md video/captions.srt linkedin/posts.md; do [ -f "$f" ] && texts+=("$f"); done
+$PY tools/check_claims.py outputs/facts.json --allow report/allow.txt "${texts[@]}"
+
+video_args=()
+[ -f video/next_april.mp4 ] && video_args=(--video video/next_april.mp4)
+$PY tools/check_deliverables.py report/report.md report/sections.txt "${video_args[@]+"${video_args[@]}"}"
+
+$PY tools/build_report.py >/dev/null
+echo "check.sh: all checks passed"
