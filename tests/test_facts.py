@@ -15,7 +15,7 @@ F = json.load(open(os.path.join(ROOT, "outputs", "facts.json")))
 @pytest.fixture(scope="module")
 def con():
     c = duckdb.connect()
-    for t in ["swap_events", "stations", "riders", "batteries", "station_hourly_status", "fleet_partners"]:
+    for t in ["swap_events", "stations", "riders", "batteries", "station_hourly_status", "fleet_partners", "city_daily_context"]:
         c.execute(f"create view {t} as select * from '{PQ}/{t}.parquet'")
     # independent firmware fix + test-station exclusion
     c.execute("""create view e as select x.*, s.city, s.charger_generation gen,
@@ -85,3 +85,8 @@ def test_zipdrop_amendment(con):
 
 def test_payment_mode_constant(con):
     assert q(con, "select count(distinct payment_mode) from swap_events")[0] == 1
+
+def test_weather_threshold(con):
+    v = q(con, """select 100*avg((x.event_type<>'swap_completed')::int) from e x join city_daily_context c on c.city=x.city and c.date=x.t::date
+                  where x.gen='Gen1' and c.max_temp_c > 38""")[0]
+    assert abs(v - F["wx_fail_Gen1_ge38_pct"]) < 1e-6
