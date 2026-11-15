@@ -34,9 +34,11 @@ def decimals(s):
 
 
 def candidates(fact):
-    """Values a fact may be written as."""
-    yield fact
-    yield fact * 100  # share written as a percentage
+    """Values a fact may be written as. The sign is read separately (a minus before ₹
+    is not part of the number the regex sees), so magnitudes are compared."""
+    for v in (fact, fact * 100):  # share written as a percentage
+        yield v
+        yield abs(v)
 
 
 def matches(written, places, fact):
@@ -55,6 +57,15 @@ def main():
 
     facts = json.load(open(a.facts))
     vals = [float(v) for v in facts.values() if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    # Facts already stored in a unit (key ends _lakh / _cr / _crore) match "₹x lakh" / "₹x crore" directly.
+    unit_vals = {"l": [], "lakh": [], "lakhs": [], "cr": [], "crore": [], "crores": []}
+    for k, v in facts.items():
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            continue
+        if k.endswith("_lakh"):
+            for u in ("l", "lakh", "lakhs"): unit_vals[u].append(float(v))
+        if k.endswith("_cr") or k.endswith("_crore"):
+            for u in ("cr", "crore", "crores"): unit_vals[u].append(float(v))
     allow = set()
     if a.allow:
         for line in open(a.allow):
@@ -75,7 +86,9 @@ def main():
                 if suf:
                     # "1.2M" is 1,200,000 written to 0.1M precision.
                     mult = SCALE[suf]
-                    if any(round(f / mult, places) == round(written, places) for f in vals):
+                    if any(round(abs(f) / mult, places) == round(written, places) for f in vals):
+                        continue
+                    if any(round(abs(f), places) == round(written, places) for f in unit_vals.get(suf, [])):
                         continue
                 elif any(matches(written, places, f) for f in vals):
                     continue
