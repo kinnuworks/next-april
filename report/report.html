@@ -6,7 +6,7 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <p>Dhiraj Kavuri · Gradient Learnings Data Analytics Hackathon · 15 November 2026</p>
 <h2>The answer in one page</h2>
 <p>Three numbers: <strong>36</strong> Gen1 cabinets in Jaipur, Delhi NCR and Hyderabad handled <strong>27.4%</strong> of summer 2025 swap attempts and produced <strong>51.2%</strong> of its failed attempts.</p>
-<p>Every April to June, VoltRelay's oldest swap cabinets (Gen1) in the three hottest cities overheat, charge slowly and run out of charged packs. Riders get turned away, and new riders who hit failed swaps early are the most likely to leave. A rule built from summer 2024 alone (each station gets the summer failure rate of its charger generation in its city) predicted summer 2025 for the 90 stations open both summers, with an out-of-sample R² of 0.990. The 60 stations VoltRelay opened in between were spread across all six cities and did not change it: the 36 failed on 15.9% of summer attempts in 2024 and 15.6% in 2025.</p>
+<p>Every April to June, VoltRelay's oldest swap cabinets (Gen1) in the three hottest cities overheat, charge slowly and turn riders away. The empty shelf is a symptom, not the cause: at the same station and cabinet temperature, a Gen1 cabinet showing zero charged packs is no more likely to fail a rider for "no charged pack" than one showing packs in stock, so more packs or more stations will not fix it; fixing the cabinets will. Riders get turned away, and new riders who hit failed swaps early are the most likely to leave. A rule built from summer 2024 alone (each station gets the summer failure rate of its charger generation in its city) predicted summer 2025 for the 90 stations open both summers, with an out-of-sample R² of 0.990. The 60 stations VoltRelay opened in between were spread across all six cities and did not change it: the 36 failed on 15.9% of summer attempts in 2024 and 15.6% in 2025.</p>
 <p>Margins have a different cause. Contribution margin per swap is negative once battery wear and station costs are counted, and the cost that rose most was wear from the new supplier, Kyron: its 2W packs wore out 3.22 times as fast as the others and cost ₹4.35 crore in extra wear before all 1,385 were written off. ZipDrop, the largest fleet partner, is the least profitable per swap after its discount rose from 12% to 28%.</p>
 <p>What to fund, in order of money and certainty:</p>
 <table>
@@ -22,10 +22,10 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <tbody>
 <tr>
 <td>1</td>
-<td>Before 1 April 2026, put 427 extra charged packs at the 36 Gen1 stations (about 12 each), moved from cool-city stations or taken from the Kyron replacement order, instead of opening more stations</td>
+<td>Instead of more stations, fix the 36 Gen1 cabinets: replace them with Gen3, or retrofit cooling if a supplier can match Gen3's charge times in heat. The 23 in Jaipur and Delhi NCR before 1 April 2026, then the 13 in Hyderabad</td>
 <td>Head of Network Ops</td>
-<td>Targets up to 20,988 "no charged pack" failures a summer; buying the packs would cost ₹1.37 crore, moving them almost nothing</td>
-<td>High that failures repeat; medium on the effect</td>
+<td>27,193 fewer failed attempts a summer, 33.3% of all summer failures</td>
+<td>High that failures repeat; medium on cost (not in the data)</td>
 </tr>
 <tr>
 <td>2</td>
@@ -36,31 +36,31 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 </tr>
 <tr>
 <td>3</td>
-<td>Replace the 36 Gen1 cabinets over the next year, Jaipur and Delhi NCR first</td>
-<td>Head of Network Ops</td>
-<td>27,193 fewer failed attempts a summer (a third of all summer failures); the buffer covers most of this sooner</td>
-<td>High that failures repeat; medium on cost</td>
-</tr>
-<tr>
-<td>4</td>
-<td>Protect new riders' first 14 days in summer (steer them to Gen2/Gen3 stations, hold a pack for them)</td>
+<td>Until the cabinets are fixed, protect new riders' first 14 days: on days forecast at 36°C or more, steer them to Gen2/Gen3 stations in the app</td>
 <td>Head of Customer Experience</td>
 <td>₹16.4-65.4 lakh of revenue from riders kept</td>
 <td>Medium</td>
 </tr>
 <tr>
-<td>5</td>
+<td>4</td>
 <td>Reopen the ZipDrop contract instead of signing an exclusive</td>
 <td>Head of Partnerships</td>
 <td>Up to ₹11.78 per ZipDrop swap</td>
 <td>High</td>
 </tr>
 <tr>
-<td>6</td>
+<td>5</td>
 <td>Roll out peak pricing city by city as a revenue measure only</td>
 <td>Head of Pricing</td>
 <td>About ₹5.41 per swap; no effect on failures</td>
 <td>Medium</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Do not buy extra packs for the hot stations yet. If leadership wants to try, test 63 packs at 6 of the 36 stations, picked at random, against the other 30 this April</td>
+<td>Head of Network Ops</td>
+<td>Settles for ₹20.2 lakh whether a ₹1.37 crore buffer would work</td>
+<td>Low that it helps: the data points against it</td>
 </tr>
 </tbody>
 </table>
@@ -227,7 +227,7 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <p>Outside April to June, all three charger generations fail on about 4.3% of attempts. In April to June, Gen1 fails on 12.9%, Gen2 on 5.8% and Gen3 on 5.1%. The Gen1-Gen3 gap is 7.8 points (95% interval 6.3 to 9.1, resampling stations so that attempts at one station are not treated as independent). By city, Jaipur (14.0%), Delhi NCR (12.6%) and Hyderabad (10.8%) lead. 36 of the 51 Gen1 stations are in those three cities. Complaints do not follow the same pattern: Gen1 and Gen3 stations draw about the same tickets per 10,000 swaps (117.6 and 120.6) and Gen2 fewer (94.5), so tickets alone would not have found this problem.</p>
 <p><img alt="Summer failure rate by charger generation and city" src="../outputs/charts/q3_gen_city.png" /></p>
 <h3>2. Cabinet telemetry shows why</h3>
-<p>At a cabinet temperature of 45°C or more, a Gen1 cabinet's average charge time rises from 88 to 156 minutes and it has no charged 2W pack in 37.3% of those hours (0.6% when cool). Gen3 cabinets reach the same temperatures and still charge in 43 minutes. In station-hours with no charged pack, 11.6% of attempts fail, against 5.9% when packs are in stock. Summer failures peak in the evening rush (10.9% from 7 to 10 PM against 7.5% the rest of the day), after a hot day has drained stock. The 45°C point matches the upper charging limit commonly given for lithium-ion cells (0°C to 45°C, Battery University; outside context, not from the data).</p>
+<p>At a cabinet temperature of 45°C or more, a Gen1 cabinet's average charge time rises from 88 to 156 minutes and it has no charged 2W pack in 37.3% of those hours (0.6% when cool). Gen3 cabinets reach the same temperatures and still charge in 43 minutes. In station-hours with no charged pack, 11.6% of attempts fail, against 5.9% when packs are in stock, which makes empty shelves look like the cause. They are not. Compare hours at the same station and the same cabinet temperature (145 station-by-temperature groups) and a Gen1 cabinet showing zero charged 2W packs is slightly less likely to fail a 2W rider for "no charged pack" (odds ratio 0.82, 95% interval 0.79 to 0.86). At 45°C or more, 9.27% of 2W attempts fail that way in empty hours against 10.85% in stocked ones, and 94.9% of these failures happen in hours when the cabinet showed charged 2W packs. Empty shelves and failures share a cause, the heat; adding packs to a cabinet that is too hot to serve them does not help. Summer failures peak in the evening rush (10.9% from 7 to 10 PM against 7.5% the rest of the day), after a hot day has drained stock. The 45°C point matches the upper charging limit commonly given for lithium-ion cells (0°C to 45°C, Battery University; outside context, not from the data).</p>
 <p>The city weather data gives operations a forecast trigger. On days up to 34°C, Gen1 stations fail on 4.3% of attempts; above 38°C, on 19.4%, while Gen3 stays at 5.9%. The jump starts at a maximum temperature of 36°C, and in summer 2025 Jaipur had 80 such days, Delhi NCR 81, Hyderabad 60 and Mumbai none. City-wide grid outages add 2.1 points to a day's failure rate for every outage hour.</p>
 <p><img alt="Failed attempts by the day's maximum temperature" src="../outputs/charts/q3_weather.png" /></p>
 <p><img alt="Cabinet temperature, charge time, empty cabinets and failed attempts" src="../outputs/charts/q3_mechanism.png" /></p>
@@ -276,27 +276,27 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <tbody>
 <tr>
 <td>1</td>
-<td>More batteries</td>
-<td>Yes: a summer buffer plus replacing Kyron</td>
-<td>Each April place 427 charged packs at the 36 hot Gen1 stations (sized for a 95% chance of having a pack at their busiest hour in heat, from the data's own charge times; 410 packs at a 90% target, 466 at 99%); move them from cool-city stations, which keep at least 328 packs charged in 90% of summer hours, or take them from the replacement order. Stop issuing retired Kyron packs; replace the Kyron 2W fleet; claim on lots KY-2407/08/09</td>
-<td>Head of Fleet &amp; Procurement</td>
-<td>Buffer targets up to 20,988 "no charged pack" failures a summer; buying it outright costs ₹1.37 crore, about 30.8% of the Kyron replacement order. ₹0.73 lakh of wear saved per 1,000 swaps moved off Kyron; replacing the 2W fleet costs about ₹4.43 crore</td>
-<td>High that failures repeat; medium on the effect and on wear (depends on the replacement threshold)</td>
+<td>More stations</td>
+<td>Not as proposed</td>
+<td>Fix the 36 Gen1 cabinets instead: replace them with Gen3, or retrofit cooling if a supplier can match Gen3's charge times in heat. The 23 in Jaipur and Delhi NCR before 1 April 2026, then the 13 in Hyderabad</td>
+<td>Head of Network Ops</td>
+<td>If they had failed like Gen3 stations in their own cities, summer 2025 would have had 27,193 fewer failed attempts, 33.3% of all summer failures, taking them from 15.6% to 5.5%. Revenue alone protects ₹7.7 lakh a summer (about ₹0.4 lakh per station), so the case is service and riders kept, not revenue</td>
+<td>High that failures repeat; medium on the cost of the fix</td>
 </tr>
 <tr>
 <td>2</td>
-<td>More stations</td>
-<td>Not as proposed</td>
-<td>Replace the 36 Gen1 cabinets with Gen3 over the next year: the 23 in Jaipur and Delhi NCR first, then the 13 in Hyderabad; until then, the buffer above</td>
-<td>Head of Network Ops</td>
-<td>If they had failed like Gen3 stations in their own cities, summer 2025 would have had 27,193 fewer failed attempts, 33.3% of all summer failures, taking them from 15.6% to 5.5%. Revenue alone protects ₹7.7 lakh a summer (about ₹0.4 lakh per station), so a full cabinet swap is justified by service and riders kept, not by revenue; the pack buffer is the cheaper first step</td>
-<td>High that failures repeat; medium on the cost of the fix</td>
+<td>More batteries</td>
+<td>Yes, to replace Kyron; not as extra stock</td>
+<td>Stop issuing retired Kyron packs; replace the Kyron 2W fleet; claim on lots KY-2407/08/09. Do not add packs at the hot stations: at the same station and temperature, empty cabinets do not fail riders more often. A buffer sized from the data's own charge times would need 427 packs (₹1.37 crore) for a 95% chance of a pack at each station's busiest hot hour; if leadership wants to try it, test 63 packs at 6 of the 36 stations, picked at random, against the other 30 (₹20.2 lakh)</td>
+<td>Head of Fleet &amp; Procurement</td>
+<td>₹0.73 lakh of wear saved per 1,000 swaps moved off Kyron; replacing the 2W fleet costs about ₹4.43 crore</td>
+<td>Medium (wear depends on the replacement threshold)</td>
 </tr>
 <tr>
 <td>3</td>
 <td>Not in the four proposals: new-rider retention</td>
 <td>Add</td>
-<td>In April to June, steer riders in their first 14 days to Gen2/Gen3 stations in the app and hold a charged pack for them at Gen1 stations; review onboarding with fleet partners</td>
+<td>Until the cabinets are fixed, on days forecast at 36°C or more, steer riders in their first 14 days to Gen2/Gen3 stations in the app; review onboarding with fleet partners</td>
 <td>Head of Customer Experience</td>
 <td>330 new riders lost to early failures; ₹16.4-65.4 lakh of revenue if kept 3 to 12 months each</td>
 <td>Medium (observational)</td>
@@ -324,14 +324,14 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <h3>The April 2026 list</h3>
 <p>Wave 1 is the 23 Gen1 stations in Jaipur and Delhi NCR, with 21,265 excess failed attempts in summer 2025. Wave 2 is the 13 Gen1 stations in Hyderabad, with 9,086. All are original launch stations. The four Gen1 stations in Pune failed on 7.8% of summer attempts and come next if budget allows. The full list, with each station's summer and non-summer failure rates, is in <code>outputs/april_2026_list.csv</code>.</p>
 <h3>How to tell it worked</h3>
-<p>Trigger the buffer when the forecast maximum reaches 36°C in Jaipur, Delhi NCR or Hyderabad. Track, from April 2026, the summer failure rate at the 36 stations (target: near the 5.6% of the other stations), zero-charged-pack hours at 45°C or more, the share of new riders with any failed swap in their first 14 days, and Kyron's share of packs issued (target: zero).</p>
+<p>Use a forecast maximum of 36°C in Jaipur, Delhi NCR or Hyderabad as the trigger for steering new riders. Track, from April 2026, the summer failure rate at each fixed station against those not yet fixed (target: near the 5.6% of the other stations), average charge time at 45°C or more (target: Gen3's 43 minutes), the share of new riders with any failed swap in their first 14 days, and Kyron's share of packs issued (target: zero).</p>
 <h2>Limits</h2>
 <ul>
 <li>This is observational data. The heat mechanism is shown in the telemetry, and the back-test shows the pattern repeats, but no experiment was run, and the back-test covers one train summer and one test summer.</li>
 <li>Cabinet upgrade and cooling prices are not in the data. The upgrade effect assumes a fixed cabinet performs like the Gen3 cabinets already running in the same city.</li>
 <li>Contribution margin is negative, so swaps saved are counted as revenue at risk, not profit.</li>
 <li>Battery wear depends on an assumed replacement threshold (70% health, within the 70-80% range commonly used for EV packs); section 12 of the notebook shows 60% and 80%.</li>
-<li>The buffer size assumes Poisson arrivals at each station's busiest summer hour and the charge times measured in its telemetry; it does not model packs moving between nearby stations.</li>
+<li>The stock test uses each station-hour's minimum charged count from telemetry, not the shelf at the moment of each attempt. That is why we propose a small test before ruling a buffer out for good, rather than ruling it out on this data alone.</li>
 <li>The pricing pilot has six cities: its pre-period was not perfectly parallel, and the permutation test cannot go below p = 0.067.</li>
 <li>The churn model ranks risk modestly (AUC 0.651 on unseen riders).</li>
 </ul>

@@ -24,9 +24,9 @@ Hackathon update (Data Analytics Hackathon, Gradient Learnings).
 
 Why do battery-swap stations fail? I linked hourly cabinet telemetry to every swap attempt in the same station-hour.
 
-At a cabinet temperature of 45°C or more, the oldest cabinets take 156 minutes to charge a pack instead of 88, and they have no charged pack in 37.3% of those hours. The newest cabinets get just as hot and still charge in 43 minutes. When a station has no charged pack, 11.6% of attempts fail, against 5.9% when packs are in stock.
+At a cabinet temperature of 45°C or more, the oldest cabinets take 156 minutes to charge a pack instead of 88, and they have no charged pack in 37.3% of those hours. The newest cabinets get just as hot and still charge in 43 minutes. When a station has no charged pack, 11.6% of attempts fail, against 5.9% when packs are in stock. So I expected "add more packs" to be the fix. It isn't: compare hours at the same station and the same cabinet temperature, and a cabinet showing zero charged packs turns riders away no more often than one with packs in stock. The empty shelf and the failures have the same cause, the heat.
 
-So summer failures aren't really about too few stations. They come from one generation of hardware in the hottest cities.
+So summer failures aren't really about too few stations or too few packs. They come from one generation of hardware in the hottest cities.
 
 Has heat ever broken something you thought was a capacity problem?
 

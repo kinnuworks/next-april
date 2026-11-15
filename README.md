@@ -14,7 +14,7 @@ One rule from summer 2024 (each station gets the failure rate of its charger gen
 
 | Outcome | Primary driver | Secondary |
 |---|---|---|
-| Service failures | Gen1 cabinets in Jaipur, Delhi NCR, Hyderabad in hot weather: 51.2% of summer failures from 27.4% of attempts. Outside air: once the day's maximum passes 36°C, Gen1 failures jump (19.4% of attempts above 38°C vs 4.3% at 34°C or less). Inside the cabinet: at 45°C or more a Gen1 cabinet takes 156 minutes to charge instead of 88 and has no charged pack in 37.3% of those hours; Gen3 still charges in 43 minutes | Evening rush after hot days; 3W riders |
+| Service failures | Gen1 cabinets in Jaipur, Delhi NCR, Hyderabad in hot weather: 51.2% of summer failures from 27.4% of attempts. An empty shelf is a symptom, not the cause: at the same station and temperature, a cabinet showing zero charged packs fails riders no more often (odds ratio 0.82). Outside air: once the day's maximum passes 36°C, Gen1 failures jump (19.4% of attempts above 38°C vs 4.3% at 34°C or less). Inside the cabinet: at 45°C or more a Gen1 cabinet takes 156 minutes to charge instead of 88 and has no charged pack in 37.3% of those hours; Gen3 still charges in 43 minutes | Evening rush after hot days; 3W riders |
 | New-rider churn | Failed swaps in the first 14 days (33.2% churn above 20% failures vs 13.3% with none; odds ×1.41 per 10 points) and partner-billed plans | Kyron packs, a summer start; queue time not significant |
 | Margin per swap | Battery wear from Kyron, the new pack supplier: 3.22 times other packs, ₹4.35 crore extra | ZipDrop's 12% → 28% discount: ₹11.78 less per swap than other partners, ₹39.6 lakh |
 
@@ -22,19 +22,19 @@ One rule from summer 2024 (each station gets the failure rate of its charger gen
 
 | # | Action (owner) | Replaces proposal | Effect | Confidence |
 |---|---|---|---|---|
-| 1 | Before April, put 427 extra charged packs at the 36 Gen1 stations (about 12 each), moved from cool-city stations or taken from the Kyron replacement order (Network Ops) | More stations: not as proposed | Targets up to 20,988 "no charged pack" failures a summer; buying the packs outright costs ₹1.37 crore | High that failures repeat |
-| 2 | Stop issuing "retired" Kyron packs; replace the Kyron 2W fleet; claim on the three Kyron lots (Fleet & Procurement) | More batteries: yes, as replacement and buffer | ₹0.73 lakh of wear saved per 1,000 swaps moved off Kyron | Medium |
-| 3 | Replace the 36 Gen1 cabinets with Gen3 over the next year (Network Ops) | More stations: instead of | 27,193 fewer failed attempts a summer, if they ran like Gen3 in their cities (33.3% of all summer failures, about two-thirds of those 36 stations' failures). Action 1 covers the 20,988 of these that are "no charged pack" failures, sooner and cheaper | High that failures repeat |
-| 4 | Protect new riders' first 14 days in summer: steer to Gen2/Gen3, hold a pack (Customer Experience) | Not proposed | 330 riders lost to early failures; ₹16.4-65.4 lakh revenue if kept | Medium |
-| 5 | Reopen the ZipDrop contract (Partnerships) | ZipDrop exclusive: no | Up to ₹11.78 per ZipDrop swap | High |
-| 6 | Roll out peak pricing city by city, for revenue (Pricing) | Pricing rollout: yes, revenue only | ₹5.41 per swap; failures unchanged | Medium |
+| 1 | Fix the 36 Gen1 cabinets: replace with Gen3, or retrofit cooling if it matches Gen3's charge times in heat. Jaipur and Delhi NCR (23) before April 2026, then Hyderabad (13) (Network Ops) | More stations: instead of | 27,193 fewer failed attempts a summer if they ran like Gen3 in their cities, 33.3% of all summer failures | High that failures repeat |
+| 2 | Stop issuing "retired" Kyron packs; replace the Kyron 2W fleet; claim on the three Kyron lots (Fleet & Procurement) | More batteries: yes, as replacement | ₹0.73 lakh of wear saved per 1,000 swaps moved off Kyron | Medium |
+| 3 | Until the cabinets are fixed, on days forecast at 36°C or more, steer new riders (first 14 days) to Gen2/Gen3 (Customer Experience) | Not proposed | 330 riders lost to early failures; ₹16.4-65.4 lakh revenue if kept | Medium |
+| 4 | Reopen the ZipDrop contract (Partnerships) | ZipDrop exclusive: no | Up to ₹11.78 per ZipDrop swap | High |
+| 5 | Roll out peak pricing city by city, for revenue (Pricing) | Pricing rollout: yes, revenue only | ₹5.41 per swap; failures unchanged | Medium |
+| 6 | Don't buy extra packs for the hot stations yet; if tried, test 63 at 6 random stations against the other 30 first (Network Ops) | More batteries: not as extra stock | Settles for ₹20.2 lakh whether a ₹1.37 crore buffer would work | Low that it helps |
 
 Data issues handled, each with a row count and its effect on a result: test stations (62,031 rows, ₹39.3 lakh billed), firmware clock shift (139,490 rows), odometer resets (7,814 + 7,712), 21 city spellings, 9,484 mislabelled tickets, and six issues the documentation does not mention.
 
 ## Charts (each makes one point)
 
 - `backtest.png`: the summer 2024 rule against summer 2025, by charger generation and city; the 36 hot-city Gen1 stations' share of failures vs attempts.
-- `q3_mechanism.png`: as cabinets heat up, only Gen1 slows down (charge time), runs out of packs, and turns riders away.
+- `q3_mechanism.png`: as cabinets heat up, only Gen1 slows down and runs out of packs; at the same temperature, empty cabinets fail riders no more often than stocked ones.
 - `q3_gen_city.png`: summer failure rate for each charger generation in each city.
 - `q6_churn.png`: new riders' churn rises with their early failure rate.
 - `q4_kyron.png`: Kyron packs lose health three times faster and give less range.

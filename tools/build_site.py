@@ -90,13 +90,13 @@ footer{{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid v
 </style></head><body><div class="wrap">
 <div class="top"><b>Next April</b><span>Gradient Learnings Data Analytics Hackathon · Dhiraj Kavuri</span></div>
 <div class="hero">{hero_lead}
-<p class="sub">Every April to June, the oldest swap cabinets (Gen1) in Jaipur, Delhi NCR and Hyderabad overheat, charge slowly and run out of charged packs. A rule built from summer 2024 alone predicted summer 2025 for every station open both summers. The {n("new_stations_total", 0)} new stations VoltRelay opened in between were spread across all six cities, not placed where these failures happen.</p>
+<p class="sub">Every April to June, the oldest swap cabinets (Gen1) in Jaipur, Delhi NCR and Hyderabad overheat, charge slowly and turn riders away, even when packs show in stock. A rule built from summer 2024 alone predicted summer 2025 for every station open both summers. The {n("new_stations_total", 0)} new stations VoltRelay opened in between were spread across all six cities, not placed where these failures happen.</p>
 <div class="stats">{stat_html}</div></div>
 
 <section><h2>One rule, tested on a summer it never saw</h2>
 <p class="lede">Each bubble is one charger generation in one city. Left to right: its summer 2024 failure rate. Bottom to top: what happened in summer 2025. The red bubbles are Gen1 in the three hottest cities.</p>
 <div class="two"><div class="panel"><h3>Summer 2024 rule vs summer 2025</h3><p>Failed attempts, % of attempts</p><svg id="bt" viewBox="0 0 520 340"></svg></div>
-<div class="panel"><h3>Why: only Gen1 slows down in the heat</h3><p>Average minutes to charge a pack, by cabinet temperature</p><svg id="mech" viewBox="0 0 520 340"></svg></div></div></section>
+<div class="panel"><h3>Why: only Gen1 slows down in the heat</h3><p>Average minutes to charge a pack, by cabinet temperature. At the same station and temperature, empty cabinets fail riders no more often than stocked ones (odds ratio {n("stock_mh_or", 2)}), so the fix is the cabinet, not more packs.</p><svg id="mech" viewBox="0 0 520 340"></svg></div></div></section>
 
 <section><h2>What VoltRelay should fund</h2><p class="lede">A verdict on each of the four budget proposals, with an owner.</p><div class="verdicts">{verdicts}</div></section>
 

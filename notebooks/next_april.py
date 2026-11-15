@@ -15,9 +15,9 @@
 #
 # This notebook runs top to bottom from the organiser's eight CSV files. Every number used in the report, the video and the summary is computed here and written to `outputs/facts.json`; a separate check fails if any text quotes a number that is not in that file.
 #
-# **The answer.** The same old Gen1 cabinets in Jaipur, Delhi NCR and Hyderabad fail every summer: they overheat, charge slowly and run out of charged packs. A rule built from summer 2024 alone predicted summer 2025 (section 10), and the new stations opened in between did not reach them. Fund a summer buffer of charged packs at those stations and replace the Kyron battery fleet, instead of more stations (section 11).
+# **The answer.** The same old Gen1 cabinets in Jaipur, Delhi NCR and Hyderabad fail every summer: they overheat, charge slowly and run out of charged packs. A rule built from summer 2024 alone predicted summer 2025 (section 10), and the new stations opened in between did not reach them. An empty shelf is a symptom, not the cause: at the same station and temperature, cabinets showing charged packs turn riders away just as often (section 5). So fix those 36 cabinets instead of adding stations or stocking more packs, and replace the Kyron battery fleet (section 11).
 #
-# **Contents.** 1 Data understanding · 2 Data cleaning (every issue, rows, effect) · 3-8 the six core questions · 9 What the failures cost · 10 The back-test, the April 2026 list, expansion waves, anomalies · 11 The pack buffer and budget verdicts · 12 Self-audit · 13 AI use
+# **Contents.** 1 Data understanding · 2 Data cleaning (every issue, rows, effect) · 3-8 the six core questions · 9 What the failures cost · 10 The back-test, the April 2026 list, expansion waves, anomalies · 11 Budget verdicts and a pack-buffer test · 12 Self-audit · 13 AI use
 
 # %% [markdown]
 # ## Setup
@@ -427,7 +427,7 @@ fact("summer_peak_fail_hour", pk.h); fact("summer_peak_fail_hour_pct", 100*pk.f)
 
 # %% [markdown]
 # ## 5. Core question 3: stations, equipment and the heat mechanism
-# Charger generation, city and season together explain where failures happen. Hourly cabinet telemetry shows why.
+# Charger generation, city and season together explain where failures happen. Hourly cabinet telemetry shows why. We also test whether the empty shelf itself is the cause, comparing hours at the same station and cabinet temperature: if it were, extra packs would be the cheap fix.
 
 # %%
 gc = sql("""select gen, city, summer, count(*) n, 1-avg(ok::int) f from evr group by all""")
@@ -462,6 +462,30 @@ link = sql("""with e as (select station_id, date_trunc('hour', ts) hr, count(*) 
  where h.telemetry_status='ok' group by 1""")
 print(link.to_string(index=False))
 fact("fail_in_empty_hours_pct", 100*link[link.is_empty].fail.iloc[0]); fact("fail_in_stocked_hours_pct", 100*link[~link.is_empty].fail.iloc[0])
+# Is the empty shelf the cause, or a symptom of the heat? Compare hours at the SAME station and cabinet-temperature band.
+# For each attempt, use the charged stock for the rider's own vehicle class (2W or 3W) in that station-hour.
+from statsmodels.stats.contingency_tables import StratifiedTable
+sk = sql("""with e as (select e.station_id, e.vehicle_class vc, date_trunc('hour', e.ts) hr, count(*) n,
+   sum((e.event_type='failed_no_charged_battery')::int) nb from evr e where e.gen='Gen1' group by all)
+ select e.*, case when vc='3W' then h.charged_3w_min else h.charged_2w_min end stock,
+   case when cabinet_temp_c<35 then '<35' when cabinet_temp_c<45 then '35-45' else '45+' end band
+ from e join raw_station_hourly_status h on h.station_id=e.station_id and h.hour_start=e.hr where h.telemetry_status='ok'""")
+sk = sk[sk.stock.notna() & (sk.vc == "2W")]
+sk["is_empty"] = sk.stock == 0
+byb = sk.groupby(["band", "is_empty"])[["n", "nb"]].sum(); byb["pct"] = 100*byb.nb/byb.n
+print("Gen1, 2W riders: 'no charged pack' failures by cabinet temperature and whether the cabinet showed zero charged 2W packs\n", byb.round(2).to_string())
+for b, key in [("<35", "cool"), ("45+", "hot")]:
+    fact(f"nb_g1_{key}_empty_pct", byb.loc[(b, True), "pct"]); fact(f"nb_g1_{key}_stocked_pct", byb.loc[(b, False), "pct"])
+fact("nb_g1_2w_with_stock_pct", 100*sk[~sk.is_empty].nb.sum()/sk.nb.sum())
+tabs = []
+for _, d in sk.groupby(["station_id", "band"]):
+    a = d.groupby("is_empty")[["n", "nb"]].sum()
+    if len(a) == 2: tabs.append(np.array([[a.nb[True], a.n[True]-a.nb[True]], [a.nb[False], a.n[False]-a.nb[False]]]))
+mh = StratifiedTable(tabs)
+fact("stock_mh_or", mh.oddsratio_pooled); lo_, hi_ = mh.oddsratio_pooled_confint(); fact("stock_mh_or_lo", lo_); fact("stock_mh_or_hi", hi_)
+fact("stock_mh_strata", len(tabs))
+print(f"Same station, same temperature band ({len(tabs)} strata): odds of a 'no charged pack' failure when the cabinet shows zero packs, "
+      f"vs packs in stock: {mh.oddsratio_pooled:.2f} [{lo_:.2f}, {hi_:.2f}]")
 for _, r in tele[tele.band.isin(["<35","45+"])].iterrows():
     fact(f"chg_min_{r.gen}_{'hot' if r.band=='45+' else 'cool'}", r.chg); fact(f"zero_stock_{r.gen}_{'hot' if r.band=='45+' else 'cool'}_pct", 100*r.zero)
 
@@ -473,10 +497,14 @@ for gname, col in [("Gen1", ACCENT), ("Gen2", MUTED), ("Gen3", GOOD)]:
     axes[1].plot(order, 100*d.zero, marker="o", color=col, label=gname)
 axes[0].set_title("Average charge time (min)"); axes[1].set_title("Hours with zero charged 2W packs, %")
 for a in axes[:2]: a.set_xlabel("cabinet temperature (°C)"); a.legend(frameon=False)
-lk = link.set_index("is_empty").fail*100
-axes[2].bar(["packs in stock", "zero packs"], [lk[False], lk[True]], color=[MUTED, ACCENT]); axes[2].set_title("Failed attempts in that hour, %")
-for p in axes[2].patches: axes[2].annotate(f"{p.get_height():.1f}%", (p.get_x()+p.get_width()/2, p.get_height()), ha="center", va="bottom", fontsize=9)
-fig.suptitle("The mechanism: only Gen1 cabinets slow down in the heat, run out of packs, and turn riders away", x=0.01, ha="left")
+bands3 = ["<35", "35-45", "45+"]; xx = np.arange(3)
+for off, emp, col, lab in [(-0.2, False, MUTED, "packs in stock"), (0.2, True, ACCENT, "zero packs")]:
+    vals = [byb.loc[(b, emp), "pct"] for b in bands3]
+    axes[2].bar(xx+off, vals, width=0.4, color=col, label=lab)
+    for x_, v in zip(xx+off, vals): axes[2].annotate(f"{v:.1f}", (x_, v), ha="center", va="bottom", fontsize=8)
+axes[2].set_xticks(xx, bands3); axes[2].set_xlabel("cabinet temperature (°C)"); axes[2].legend(frameon=False, fontsize=8)
+axes[2].set_title("Gen1 2W 'no charged pack' failures, %\nan empty shelf adds nothing once heat is fixed", fontsize=10)
+fig.suptitle("The mechanism: heat slows Gen1 charging and turns riders away whether or not packs show in stock", x=0.01, ha="left")
 savefig(fig, "q3_mechanism")
 
 fig, ax = plt.subplots(figsize=(9, 3.6))
@@ -1034,8 +1062,10 @@ per_station_value = per_station_lost_swaps*avg_rev + (riders_lost/FACTS["gen1_st
 fact("breakeven_per_station_lakh", per_station_value.mean()/1e5); fact("breakeven_all36_lakh", per_station_value.sum()/1e5)
 fact("list_lost_rev_lakh", (per_station_lost_swaps*avg_rev).sum()/1e5)
 # %% [markdown]
-# ### Cheaper than new cabinets: a summer buffer of charged packs, sized from the data
-# A station runs out when riders arrive faster than packs finish charging. For each of the 36 stations: busy-hour 2W demand in summer 2025 (90th percentile hour), times its charge time when hot vs cool, gives packs tied up charging; a 95% service level on Poisson arrivals gives the stock needed. The extra packs needed in heat is the difference.
+# ### Would extra charged packs do the job instead? Test it before buying
+# The obvious cheap fix is more packs at the hot stations. Section 5 shows why we do not lead with it: at the same station and cabinet temperature, a Gen1 cabinet showing zero charged packs is no more likely to turn a rider away for "no charged pack" than one showing packs in stock, and most of those failures happen in hours with packs on the shelf. The heat, not the shelf, is the constraint. So the buffer below is sized as a **test**: if VoltRelay wants to try it, this is what it would take, run first at a few stations against the rest.
+#
+# Sizing: for each of the 36 stations, busy-hour 2W demand in summer 2025 (90th percentile hour) times its charge time when hot vs cool gives packs tied up charging; a 95% service level on Poisson arrivals gives the stock needed. The extra packs needed in heat is the difference.
 
 # %%
 from scipy.stats import poisson
@@ -1062,6 +1092,9 @@ cellora_2w_cost = sql("select avg(purchase_cost_inr) c from raw_batteries where 
 fact("pack_2w_cost_inr", cellora_2w_cost); fact("kyron_2w_replace_cost_cr", FACTS["packs_Kyron_2W"]*cellora_2w_cost/1e7)
 fact("buffer_cost_cr", FACTS["buffer_extra_packs"]*cellora_2w_cost/1e7)
 fact("buffer_share_of_kyron_replacement_pct", 100*FACTS["buffer_extra_packs"]/FACTS["packs_Kyron_2W"])
+pilot = bf.sort_index().sample(6, random_state=59500)  # test stations picked at random, so the other 30 are a fair comparison
+fact("buffer_pilot_stations", len(pilot)); fact("buffer_pilot_packs", pilot.extra.sum())
+fact("buffer_pilot_cost_lakh", pilot.extra.sum()*cellora_2w_cost/1e5)
 fact("kyron_months_in_service", sql("select date_diff('month', min(ts), max(ts)) + 1 m from evr e join raw_batteries b on b.battery_id=e.battery_out_id where b.supplier='Kyron' and b.pack_type like '2W%'").m[0])
 fact("zipdrop_months_after_amendment", sql("select date_diff('month', date '2024-11-01', max(ts)) + 1 m from evr").m[0])
 fact("kyron_saving_per_1000_lakh", (FACTS["kyron_wear_2w"]-FACTS["other_wear_2w"])*1000/1e5)
@@ -1069,11 +1102,11 @@ for m_ in (3, 12): fact(f"retention_value_{m_}m_lakh", FACTS["churn_from_early_f
 verdicts = pd.DataFrame([
     ("More stations", "Not as proposed",
      f"The {int(FACTS['new_stations_total'])} stations opened in the two waves were spread evenly; the three hottest cities had {FACTS['share_need_Jaipur_pct']+FACTS['share_need_Delhi_NCR_pct']+FACTS['share_need_Hyderabad_pct']:.0f}% of summer-2024 failures but got {FACTS['share_new_Jaipur_pct']+FACTS['share_new_Delhi_NCR_pct']+FACTS['share_new_Hyderabad_pct']:.0f}% of new stations. The {int(FACTS['hot_gen1_stations'])} Gen1 stations in those cities failed on {FACTS['hot_gen1_fail24_pct']:.1f}% of summer attempts in 2024 and {FACTS['hot_gen1_fail25_pct']:.1f}% in 2025.",
-     "Swap the Gen1 cabinets for Gen3 in place before 1 April 2026: Jaipur and Delhi NCR first, then Hyderabad", "Head of Network Ops",
-     f"Pays back in one summer if it costs under ₹{FACTS['breakeven_per_station_lakh']:.1f} lakh per station", "High (back-tested)"),
-    ("More batteries", "Yes, but replace, don't add Kyron",
+     "Fix the 36 Gen1 cabinets instead: replace them with Gen3 (or retrofit cooling, if a supplier can match Gen3's charge times in heat), Jaipur and Delhi NCR before 1 April 2026, then Hyderabad", "Head of Network Ops",
+     f"{FACTS['upgrade_avoided_failed']:,.0f} fewer failed attempts a summer, {FACTS['upgrade_avoided_pct_of_summer_fails']:.1f}% of all summer failures; the case is service and riders kept (revenue alone protects ₹{FACTS['upgrade_saved_rev_lakh']:.1f} lakh a summer)", "High that failures repeat; medium on cost"),
+    ("More batteries", "Replace Kyron; test extra stock before buying it",
      f"Kyron 2W packs lost {FACTS['soh_loss_per100_Kyron_2W']:.2f} health points per 100 swaps vs {FACTS['soh_loss_per100_Cellora_2W']:.2f} (Cellora); extra wear ₹{FACTS['kyron_excess_wear_cr']:.2f} crore; still issued {int(FACTS['kyron_issued_after_retirement']):,} times after 'retirement'.",
-     f"Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek and claim on lots KY-2407/08/09; each April place {FACTS['buffer_extra_packs']:.0f} charged packs at the 36 hot Gen1 stations, taken from the replacement order or moved from cool-city stations", "Head of Fleet & Procurement",
+     f"Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek and claim on lots KY-2407/08/09. Do not buy extra packs for the hot stations yet: an empty shelf does not raise failures once heat is held fixed. If tried, test {FACTS['buffer_pilot_packs']:.0f} packs at {FACTS['buffer_pilot_stations']:.0f} stations against the other {FACTS['hot_gen1_stations']-FACTS['buffer_pilot_stations']:.0f} first", "Head of Fleet & Procurement",
      f"Each 1,000 swaps on a Cellora/Amptek pack instead of Kyron saves about ₹{(FACTS['kyron_wear_2w']-FACTS['other_wear_2w'])*1000/1e5:.2f} lakh of wear; replacing the 2W fleet costs about ₹{FACTS['kyron_2w_replace_cost_cr']:.2f} crore", "Medium (wear depends on the replacement threshold)"),
     ("Network-wide pricing rollout", "Yes for revenue, not for service",
      f"Pilot vs other cities: {FACTS['did_peak_share_pts']:+.1f} points of swaps in peak hours, {FACTS['did_rev_inr']:+.2f} ₹ revenue per swap, peak-hour failures {FACTS['did_peak_fail_pts']:+.2f} points (not significant).",
@@ -1083,7 +1116,7 @@ verdicts = pd.DataFrame([
      "Reopen the contract: bring the discount back toward the 12% other partners pay and add the peak surcharge", "Head of Partnerships", f"Up to ₹{-FACTS['zipdrop_did_rev']:.2f} per ZipDrop swap", "High"),
     ("Not in the four proposals: new-rider retention", "Add",
      f"New riders with more than 20% failed swaps in their first 14 days left at {FACTS['churn_highfail_pct']:.1f}% against {FACTS['churn_nofail_pct']:.1f}%; the model attributes {FACTS['churn_from_early_fail']:.0f} lost riders to early failures.",
-     "In April to June, steer riders in their first 14 days to Gen2/Gen3 stations in the app and hold a charged pack for them at Gen1 stations; review onboarding with fleet partners, whose riders churn more", "Head of Customer Experience",
+     "Until the cabinets are fixed: on days forecast at 36°C or more, steer riders in their first 14 days to Gen2/Gen3 stations in the app; review onboarding with fleet partners, whose riders churn more", "Head of Customer Experience",
      f"₹{FACTS['churn_from_early_fail']*FACTS['monthly_rev_retained_rider']*3/1e5:.1f}-{FACTS['churn_from_early_fail']*FACTS['monthly_rev_retained_rider']*12/1e5:.1f} lakh of revenue from riders kept (3-12 months each)", "Medium (observational)"),
 ], columns=["proposal", "verdict", "evidence", "do this instead", "owner", "effect", "confidence"])
 print(verdicts.to_string(index=False))

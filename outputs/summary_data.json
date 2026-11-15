@@ -396,14 +396,14 @@
   {
    "proposal": "More stations",
    "verdict": "Not as proposed",
-   "do this instead": "Swap the Gen1 cabinets for Gen3 in place before 1 April 2026: Jaipur and Delhi NCR first, then Hyderabad",
+   "do this instead": "Fix the 36 Gen1 cabinets instead: replace them with Gen3 (or retrofit cooling, if a supplier can match Gen3's charge times in heat), Jaipur and Delhi NCR before 1 April 2026, then Hyderabad",
    "owner": "Head of Network Ops",
-   "confidence": "High (back-tested)"
+   "confidence": "High that failures repeat; medium on cost"
   },
   {
    "proposal": "More batteries",
-   "verdict": "Yes, but replace, don't add Kyron",
-   "do this instead": "Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek and claim on lots KY-2407/08/09; each April place 427 charged packs at the 36 hot Gen1 stations, taken from the replacement order or moved from cool-city stations",
+   "verdict": "Replace Kyron; test extra stock before buying it",
+   "do this instead": "Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek and claim on lots KY-2407/08/09. Do not buy extra packs for the hot stations yet: an empty shelf does not raise failures once heat is held fixed. If tried, test 63 packs at 6 stations against the other 30 first",
    "owner": "Head of Fleet & Procurement",
    "confidence": "Medium (wear depends on the replacement threshold)"
   },
@@ -424,7 +424,7 @@
   {
    "proposal": "Not in the four proposals: new-rider retention",
    "verdict": "Add",
-   "do this instead": "In April to June, steer riders in their first 14 days to Gen2/Gen3 stations in the app and hold a charged pack for them at Gen1 stations; review onboarding with fleet partners, whose riders churn more",
+   "do this instead": "Until the cabinets are fixed: on days forecast at 36\u00b0C or more, steer riders in their first 14 days to Gen2/Gen3 stations in the app; review onboarding with fleet partners, whose riders churn more",
    "owner": "Head of Customer Experience",
    "confidence": "Medium (observational)"
   }
