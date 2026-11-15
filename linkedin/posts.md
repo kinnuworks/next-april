@@ -2,23 +2,32 @@
 
 Timing: post 1 now, post 2 mid-afternoon, post 3 after you submit (it gives away the station list and the back-test, so other teams can't use it today). Each one ends with a question, as the template asks. Attach the image named under each post.
 
-## Main post (the one to submit)
+## Main post (the one to submit): text + Next_April_carousel.pdf
 
-A battery-swap network grew completed swaps 2.93 times in 18 months. Failed swaps grew 5.98 times.
+51.2% of summer swap failures came from just 36 cabinets.
 
-For the Data Analytics Hackathon by Gradient Learnings, I worked through 3,877,013 swap attempts from an electric two- and three-wheeler network in six Indian cities. Leadership had four budget ideas on the table: more stations, more batteries, peak pricing everywhere, or an exclusive deal with the biggest fleet partner.
+Not from too few stations. Not from too few batteries.
 
-The data pointed somewhere else. The same 36 old cabinets in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer attempts and produced 51.2% of the failures. At 45°C inside the cabinet, they take 156 minutes to charge a pack, against 88 when cool. The newest cabinets get just as hot and still charge in 43.
+For the Data Analytics Hackathon by @Gradient Learnings, I analysed 3,877,013 swap attempts from an EV battery-swap network in six Indian cities. Completed swaps grew 2.93 times in 18 months. Failed swaps grew 5.98 times.
 
-I expected "add more packs" to be the fix. It isn't. Compare the same station at the same temperature, and a cabinet with zero charged packs turns riders away no more often than one with packs on the shelf. The heat is the cause; the empty shelf is a symptom.
+Leadership had four budget ideas: more stations, more batteries, peak pricing, or an exclusive with the biggest fleet partner.
 
-A rule built from summer 2024 alone predicted every station's summer 2025 failure rate with an out-of-sample R² of 0.990. So the answer to "where should the budget go" is: fix those 36 cabinets before next April, not more stations.
+What the data showed:
 
-Have you ever found that the obvious fix in your data was treating a symptom?
+→ The same 36 old cabinets in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer attempts and caused 51.2% of the failures.
+→ At 45°C inside, they take 156 minutes to charge a pack, against 88 when cool. Newer cabinets still take 43.
+→ Adding packs won't help. At the same station and temperature, an empty cabinet fails riders no more often than a stocked one.
+→ A rule from summer 2024 predicted every station's summer 2025 failure rate (R² 0.990, out of sample).
 
-#DataAnalytics #DataAnalyticsHackathon #DataScience #Analytics #BuildWithData
+So the budget answer is simple: fix those 36 cabinets before next April.
 
-Image: outputs/charts/backtest.png (or readme_hero.png)
+The carousel walks through the evidence in 7 slides. Full notebook and report in the comments.
+
+What's the most convincing "obvious fix" you've seen data prove wrong?
+
+#DataAnalytics #DataScience #Python #EV #DataAnalyticsHackathon
+
+First comment (post right after): Full analysis, notebook and report: <repo link>
 
 ## Post 1 (now): the problem
 
