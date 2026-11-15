@@ -43,20 +43,26 @@ def test_gen_summer_failure(con):
         v = q(con, f"select 100*(1-avg((event_type='swap_completed')::int)) from e where gen='{gen}' and month(t) in (4,5,6)")[0]
         assert abs(v - F[f"fail_{gen}_summer_pct"]) < 0.05
 
-def test_backtest(con):
-    rows = con.execute("""select station_id,
-        1-avg((event_type='swap_completed')::int) filter (where year(t)=2024 and month(t) in (4,5,6)) a,
-        1-avg((event_type='swap_completed')::int) filter (where year(t)=2025 and month(t) in (4,5,6)) b,
-        sum((event_type<>'swap_completed')::int) filter (where year(t)=2025 and month(t) in (4,5,6)) f,
-        count(*) filter (where year(t)=2025 and month(t) in (4,5,6)) n
-        from e group by 1""").fetchall()
-    both = [r for r in rows if r[1] is not None and r[2] is not None]
-    rho = stats.spearmanr([r[1] for r in both], [r[2] for r in both]).correlation
-    assert len(both) == F["backtest_stations"] and abs(rho - F["backtest_spearman"]) < 1e-6
-    top = sorted(both, key=lambda r: -r[1])[:20]
-    tf = sum(r[3] or 0 for r in rows); tn = sum(r[4] or 0 for r in rows)
-    assert abs(100*sum(r[3] for r in top)/tf - F["top20_fail_share_2025_pct"]) < 1e-6
-    assert abs(100*sum(r[4] for r in top)/tn - F["top20_attempt_share_2025_pct"]) < 1e-6
+def test_backtest_group_rule(con):
+    rows = con.execute("""select station_id, gen || ' ' || city g,
+        sum((event_type<>'swap_completed')::int) filter (where year(t)=2024 and month(t) in (4,5,6)) f24,
+        count(*) filter (where year(t)=2024 and month(t) in (4,5,6)) n24,
+        1-avg((event_type='swap_completed')::int) filter (where year(t)=2025 and month(t) in (4,5,6)) r25
+        from e group by all""").fetchall()
+    both = [r for r in rows if r[3] and r[4] is not None]
+    grp = {}
+    for _, g, f, n, _r in both:
+        a = grp.setdefault(g, [0, 0]); a[0] += f; a[1] += n
+    pred = [grp[r[1]][0]/grp[r[1]][1] for r in both]
+    r2 = stats.pearsonr(pred, [r[4] for r in both])[0]**2
+    assert len(both) == F["backtest_stations"] and abs(r2 - F["rule_r2"]) < 1e-6
+
+def test_hot_gen1_cohort(con):
+    tot = q(con, "select sum((event_type<>'swap_completed')::int), count(*) from e where year(t)=2025 and month(t) in (4,5,6)")
+    hot = q(con, """select sum((event_type<>'swap_completed')::int), count(*), count(distinct station_id) from e
+                    where year(t)=2025 and month(t) in (4,5,6) and gen='Gen1' and city in ('Jaipur','Delhi NCR','Hyderabad')""")
+    assert hot[2] == F["hot_gen1_stations"]
+    assert abs(100*hot[0]/tot[0] - F["hot_gen1_share_fail25_pct"]) < 1e-6 and abs(100*hot[1]/tot[1] - F["hot_gen1_share_att25_pct"]) < 1e-6
 
 def test_heat_mechanism(con):
     hot = q(con, """select avg(avg_charge_minutes), 100*avg((charged_2w_min=0)::int) from station_hourly_status h join stations s using(station_id)
