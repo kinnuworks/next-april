@@ -22,8 +22,14 @@ import json,sys
 nb=json.load(open('notebooks/next_april.ipynb'))
 open('outputs/notebook_prose.md','w').write('\n'.join(''.join(c['source']) for c in nb['cells'] if c['cell_type']=='markdown'))
 "
-texts=(report/report.md outputs/notebook_prose.md)
-for f in README.md video/script.md video/captions.srt linkedin/posts.md; do [ -f "$f" ] && texts+=("$f"); done
+$PY -c "
+import re
+h=open('site/index.html',encoding='utf-8').read()
+h=re.sub(r'<(script|style)[^>]*>.*?</\\1>','',h,flags=re.S); h=re.sub(r'<[^>]+>',' ',h); h=re.sub(r'STN-[A-Z]+-[0-9]+','STN',h)
+open('outputs/site_text.md','w').write(h)
+"
+texts=(report/report.md outputs/notebook_prose.md outputs/site_text.md)
+for f in README.md video/script.md video/captions.srt linkedin/posts.md submission/submission.md; do [ -f "$f" ] && texts+=("$f"); done
 $PY tools/check_claims.py outputs/facts.json --allow report/allow.txt "${texts[@]}"
 
 video_args=()

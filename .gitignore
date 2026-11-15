@@ -21,3 +21,4 @@ data/
 __pycache__/
 outputs/cache/
 outputs/notebook_prose.md
+outputs/site_text.md

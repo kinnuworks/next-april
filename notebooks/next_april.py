@@ -933,6 +933,7 @@ l26["wave_2026"] = np.where(l26.city.isin(["Jaipur", "Delhi NCR"]), 1, 2)
 l26 = l26.sort_values(["wave_2026", "city", "station_id"])
 april = l26[["wave_2026", "station_id", "city", "gen", "f24", "f25", "f_other", "n25", "excess_failed", "riders25"]]
 april.to_csv(os.path.join(OUT, "april_2026_list.csv"), index=False)
+for _, r in april.iterrows(): fact(f"station_fail25_{r.station_id}", 100*r.f25)
 wv = april.groupby("wave_2026").agg(stations=("station_id", "size"), excess=("excess_failed", "sum"), riders=("riders25", "sum"),
                                      f25=("f25", "mean"))
 print(wv.round(1).to_string())
