@@ -22,7 +22,7 @@ THEME = """
   --display:'Fraunces',Georgia,serif; --body:'Geist',system-ui,sans-serif; --num:'Geist',system-ui,sans-serif;
   --fs-display:clamp(40px,calc(40px + 38 * ((100vw - 375px) / 1065)),78px); --w-display:420; --track-display:-.034em; --lh-display:1;
   --fs-h2:clamp(30px,calc(30px + 22 * ((100vw - 375px) / 1065)),52px); --w-h2:420; --font-h2:var(--display);
-  --r-card:10px; --r-window:6px; --shadow-window:4px 4px 0 0 #262626; --window-edge:1px solid #262626; --align:center; --page:1200px;
+  --r-card:10px; --r-window:6px; --shadow-window:4px 4px 0 0 #262626; --window-edge:1px solid #262626; --align:center; --page:1392px;
 }
 """
 FONTS = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,420;9..144,500&family=Geist:wght@400;500;600&display=swap"
@@ -32,7 +32,7 @@ FAVICON = "data:image/svg+xml," + __import__("urllib.parse").parse.quote(MARK)
 
 def page(theme="a"):
     big36 = n("hot_gen1_stations", 0)
-    hero_lead = f'<p class="kicker">Operations briefing for VoltRelay&rsquo;s battery-swap network</p><h1>The same {big36} old cabinets will fail again next April<span class="stop">.</span></h1>'
+    hero_lead = f'<p class="kicker">Operations briefing for VoltRelay&rsquo;s battery-swap network</p><h1>The same {big36} old cabinets will fail again next April.</h1>'
     stats = [
         (n("hot_gen1_share_fail25_pct") + "%", f"of summer 2025 failed swaps came from these {big36} stations"),
         (n("hot_gen1_share_att25_pct") + "%", "of attempts went through them"),
@@ -42,14 +42,14 @@ def page(theme="a"):
     stat_html = "".join(f'<div class="stat"><div class="v">{v}</div><div class="l">{html.escape(l)}</div></div>' for v, l in stats)
     verdicts = "".join(
         f'<div class="verdict"><div class="p">{html.escape(v["proposal"])}</div><div class="vv {"no" if v["verdict"].startswith(("No", "Not")) else "yes"}">{html.escape(v["verdict"])}</div>'
-        f'<div class="d">{html.escape(v["do this instead"])}</div><div class="o">{html.escape(v["owner"])} · {html.escape(v["confidence"])}</div></div>'
+        f'<div class="d">{html.escape(v["do this instead"])}</div><div class="o"><b>Owner:</b> {html.escape(v["owner"])}<br><b>Confidence:</b> {html.escape(v["confidence"])}</div></div>'
         for v in D["verdicts"])
     rows = "".join(f'<tr><td>{s["wave_2026"]}</td><td class="mono">{s["station_id"]}</td><td>{s["city"]}</td><td class="num">{s["f25"]}%</td></tr>'
                    for s in D["stations"])
     data_js = json.dumps({"groups": D["groups"], "mechanism": D["mechanism"], "churn": D["churn"],
                           "months": D["months"], "gm": D["groups_monthly"], "ex": D["explorer"]})
     return f"""<!doctype html><html lang="en" ><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Next April</title><link rel="icon" href="{FAVICON}">
+<title>Next April</title><script>document.documentElement.dataset.motion=matchMedia("(prefers-reduced-motion: reduce)").matches?"reduce":"full"</script><link rel="icon" href="{FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="{FONTS}" rel="stylesheet">
 <style>
 {THEME}
@@ -58,7 +58,7 @@ def page(theme="a"):
 h1{{font-family:var(--display);font-size:var(--fs-display);font-weight:var(--w-display);line-height:var(--lh-display);letter-spacing:var(--track-display);color:var(--ink);margin:0 auto;max-width:18ch}}
 .stop{{color:var(--heat)}}
 .nav{{display:flex;align-items:center;justify-content:space-between;gap:16px;height:67px}}
-.brand{{display:inline-flex;align-items:center;gap:8px;font-family:var(--body);font-weight:600;font-size:24px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}} .brand svg{{width:34px;height:34px}} .wm{{display:inline-flex;align-items:center;gap:6px}} .wm svg{{width:22px;height:22px}}
+.brand{{display:inline-flex;align-items:center;gap:8px;font-family:var(--body);font-weight:600;font-size:21px;letter-spacing:-.03em;color:var(--ink);text-decoration:none}} .brand svg{{width:34px;height:34px}} .wm{{display:inline-flex;align-items:center;gap:6px}} .wm svg{{width:22px;height:22px}}
 .links{{display:flex;gap:28px}} .links a{{color:var(--ink-2);text-decoration:none;font-size:17px}} .links a:hover{{color:var(--ink)}}
 .btn{{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;background:#a3e635;color:#000;border:1px solid #262626;border-radius:4px;box-shadow:2px 2px 0 0 #262626;font:500 18px/1 var(--body);text-decoration:none;transition:transform .25s,box-shadow .25s}}
 .btn:hover{{transform:translate(-1px,-1px);box-shadow:3px 3px 0 0 #262626}} .btn-sm{{height:40px;font-size:16px;padding:0 14px}}
@@ -89,7 +89,8 @@ h1{{font-family:var(--display);font-size:var(--fs-display);font-weight:var(--w-d
 .stat{{padding:30px 26px}} .stat + .stat{{border-left:1px solid var(--line)}}
 .stat .v{{font-family:var(--display);font-size:var(--fs-h2);font-weight:420;letter-spacing:-.034em;line-height:1;color:var(--ink)}} .stat:first-child .v{{color:var(--heat)}}
 .stat .l{{font-size:15px;color:var(--ink-2);line-height:1.45;margin-top:14px}}
-section{{margin-top:88px}} h2{{font-family:var(--font-h2);font-weight:var(--w-h2);font-size:var(--fs-h2);letter-spacing:-.02em;line-height:1.1;color:var(--ink);margin:0 0 12px}}
+[data-motion=reduce] *{{transition:none!important;animation:none!important}}
+section{{margin-top:122px}} h2{{font-family:var(--font-h2);font-weight:var(--w-h2);font-size:var(--fs-h2);letter-spacing:-.02em;line-height:1.1;color:var(--ink);margin:0 0 12px}}
 .lede{{color:var(--ink-2);margin:0 0 22px;max-width:62ch;line-height:1.55}}
 .two{{display:grid;grid-template-columns:1fr 1fr;gap:24px}}
 .panel{{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r-card);padding:20px}}
@@ -100,7 +101,7 @@ svg{{width:100%;height:auto;display:block}} svg text{{fill:var(--muted);font-fam
 .verdicts{{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}}
 .verdict{{border:1px solid var(--line);border-radius:var(--r-card);padding:18px;background:var(--sheet)}}
 .verdict .p{{font-weight:600;color:var(--ink)}} .verdict .vv{{font-size:14px;font-weight:600;margin:8px 0}}
-.verdict .vv.no{{color:var(--heat)}} .verdict .vv.yes{{color:var(--cool)}} .verdict .d{{font-size:15px;line-height:1.45}} .verdict .o{{font-size:13px;color:var(--muted);margin-top:12px}}
+.verdict .vv.no{{color:var(--heat)}} .verdict .vv.yes{{color:var(--cool)}} .verdict .d{{font-size:15px;line-height:1.45}} .verdict .o{{font-size:14px;color:var(--muted);margin-top:12px;line-height:1.45}} .verdict .o b{{color:var(--ink-2);font-weight:500}}
 table{{width:100%;border-collapse:collapse;font-size:14px}} td,th{{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}} th{{color:var(--muted);font-weight:500;background:var(--sheet);position:sticky;top:0}}
 .mono{{font-variant-numeric:tabular-nums}} .num{{text-align:right;font-variant-numeric:tabular-nums;color:var(--heat);font-weight:500}}
 .tablewrap{{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:var(--r-card)}}
@@ -113,7 +114,7 @@ footer{{margin-top:72px;color:var(--muted);font-size:13px;border-top:1px solid v
 <a class="btn btn-sm" href="#explore">Look up a station <span aria-hidden="true">&rarr;</span></a></nav>
 <div class="hero" id="why">
 <a class="badge" href="#win"><span class="tag">Back-tested</span>A summer 2024 rule, scored on summer 2025 <span aria-hidden="true">&rarr;</span></a>
-<h1>The same {big36} old cabinets will fail again next April<span class="stop">.</span></h1>
+<h1>The same {big36} old cabinets will fail again next April.</h1>
 <p class="sub">Every April to June, the oldest swap cabinets in Jaipur, Delhi NCR and Hyderabad overheat and turn riders away. VoltRelay should fix those {big36} cabinets, not open more stations.</p>
 <a class="btn" href="#explore">Look up a station <span aria-hidden="true">&rarr;</span></a>
 <div class="trustrow"><span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5 8.2l2 2 4-4.4"/></svg>Runs top to bottom in Colab</span><span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5 8.2l2 2 4-4.4"/></svg>Every number re-checked by tests</span></div>
@@ -194,7 +195,7 @@ function axes(svg,x0,x1,y0,y1,xt,yt,xl,yl,W=520,H=340,m={{l:46,r:14,t:10,b:38}})
    if(mo===1||i===0)el('text',{{x:X(i),y:290,'text-anchor':'middle'}},s).textContent=m}});
   const line=(arr,col,w,dash)=>{{const p=arr.map((v,i)=>v==null?null:[X(i),Y(v)]).filter(Boolean);if(p.length)el('polyline',{{points:p.map(q=>q.join(',')).join(' '),fill:'none',stroke:col,'stroke-width':w,'stroke-dasharray':dash||''}},s)}};
   line(g,css('--grey'),2,'4 3'); line(r.m,css('--heat'),2.5);
-  document.getElementById('exh').textContent=r.id+' · '+r.gen+' · '+r.city;
+  document.getElementById('exh').textContent=r.id+', '+r.gen+' in '+r.city;
   document.getElementById('exp').textContent='Red: this station, % of attempts failed each month. Dashed: all '+r.gen+' stations in '+r.city+'.'+(r.april?' On the April 2026 list, wave '+r.april+'.':'');
  }}
  function render(){{
