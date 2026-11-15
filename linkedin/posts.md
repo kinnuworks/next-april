@@ -38,13 +38,15 @@ Image: outputs/charts/q3_mechanism.png
 
 Submitted my entry for the Data Analytics Hackathon by Gradient Learnings. It's called Next April.
 
-The question was where a battery-swap network should spend its next budget. The answer: the same 20 stations fail every summer, and they can be named in advance.
+The question was where a battery-swap network should spend its next budget. The answer: the same old cabinets fail every summer, and one simple rule names them in advance.
 
-I ranked stations using only summer 2024 data, froze the list, and checked it against summer 2025. The ranking held (rank correlation 0.948 across 90 stations). The 20 worst stations of 2024 produced 30.6% of summer 2025's failed attempts while handling 15.0% of attempts. The 60 new stations opened in between didn't change that: those 20 failed at 17.3% of attempts in 2024 and 17.0% in 2025.
+I took summer 2024 alone and gave each station the failure rate of its charger generation in its city. Checked against summer 2025, that rule predicted every station's rate with R² 0.991. The 36 oldest cabinets in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer attempts and produced 51.2% of the failures. The 60 new stations opened in between didn't change that: those 36 failed on 15.9% of summer attempts in 2024 and 15.6% in 2025.
+
+The surprise was what didn't work. Ranking individual stations by their own history added nothing once you knew the group (rank correlation 0.13), so the fix is the whole group.
 
 New riders who hit failed swaps in their first two weeks left at 33.2%, against 13.3% for riders with none. Separately, a new battery supplier's packs wore out more than three times as fast and cost ₹4.35 crore in extra wear.
 
-My recommendation: replace the old cabinets on the list before April, swap out the weak batteries, and skip the "more stations" plan.
+My recommendation: replace those old cabinets before April, starting with Jaipur and Delhi NCR, swap out the weak batteries, and skip the "more stations" plan.
 
 If you had to defend a budget with one chart, which kind would you pick?
 

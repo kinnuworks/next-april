@@ -16,27 +16,6 @@
 45  # 45°C cabinet temperature band
 60  # days 30-60
 300  # 300 km odometer cap
-0.1  # gap between list positions 20 and 21 (16.63% vs 16.55%)
-048
-141
-035
-033
-139
-045
-039
-136
-036
-142
-040
-138
-043
-135
-134
-038
-037
-137
-047
-050
 2407
 08
 09

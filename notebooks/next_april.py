@@ -707,78 +707,100 @@ ax.set_xlabel("₹ lakh, Jan 2024 - Jun 2025"); ax.set_title("Ranked: what each 
 savefig(fig, "chain_leaks")
 
 # %% [markdown]
-# ## 10. Next April: the stations that will fail again, tested on a summer it never saw
-# **Back-test.** Rank stations using only April-June 2024, freeze the ranking, and check it against what actually happened in April-June 2025. If the ranking holds, a list built the same way from 2025 tells VoltRelay where summer 2026 will fail.
+# ## 10. Next April: which stations will fail next summer, tested on a summer the rule never saw
+# **Back-test.** Take one simple rule from summer 2024 alone: a station's expected summer failure rate is the 2024 rate of its *charger generation in its city* (for example, Gen1 in Jaipur). Freeze it and compare with what each station actually did in summer 2025. Then ask whether a station's *own* 2024 history adds anything beyond its group.
 
 # %%
 ss = sql("""select station_id, city, gen, wave,
   1-avg(ok::int) filter (where y=2024 and summer) f24, count(*) filter (where y=2024 and summer) n24,
   1-avg(ok::int) filter (where y=2025 and summer) f25, count(*) filter (where y=2025 and summer) n25,
+  sum((not ok)::int) filter (where y=2024 and summer) fails24,
   sum((not ok)::int) filter (where y=2025 and summer) fails25,
   count(distinct rider_id) filter (where y=2025 and summer) riders25
   from evr group by all""")
-both = ss.dropna(subset=["f24", "f25"])
+ss["group"] = ss.gen + " in " + ss.city
+both = ss.dropna(subset=["f24", "f25"]).copy()
+g24 = both.groupby("group").apply(lambda d: d.fails24.sum()/d.n24.sum()).rename("group24")
+both = both.join(g24, on="group")
+r_rule = stats.pearsonr(both.group24, both.f25)[0]
+mae_rule = (both.group24 - both.f25).abs().mean()
 rho = stats.spearmanr(both.f24, both.f25).correlation
+both["own_vs_group24"] = both.f24 - both.group24
+both["own_vs_group25"] = both.f25 - both.groupby("group").f25.transform("mean")
+rho_within = stats.spearmanr(both.own_vs_group24, both.own_vs_group25).correlation
 fact("backtest_stations", len(both)); fact("backtest_spearman", rho)
-rk = both.sort_values("f24", ascending=False).reset_index(drop=True)
-tot_f25, tot_n25 = ss.fails25.sum(), ss.n25.sum()
-rk["cum_fail_share"] = rk.fails25.cumsum()/tot_f25; rk["cum_attempt_share"] = rk.n25.cumsum()/tot_n25
-top20 = rk.head(20)
-fact("top20_fail_share_2025_pct", 100*top20.fails25.sum()/tot_f25); fact("top20_attempt_share_2025_pct", 100*top20.n25.sum()/tot_n25)
-fact("top20_gen1_count", (top20.gen == "Gen1").sum())
-fact("top20_f24_pct", 100*np.average(top20.f24, weights=top20.n24)); fact("top20_f25_pct", 100*np.average(top20.f25, weights=top20.n25))
+fact("rule_r2", r_rule**2); fact("rule_mae_pts", 100*mae_rule); fact("within_group_spearman", rho_within)
+print(f"Group rule from 2024 predicts each station's 2025 summer failure rate: R^2 {r_rule**2:.3f}, mean error {100*mae_rule:.2f} points ({len(both)} stations)")
+print(f"A station's own 2024 history beyond its group: rank correlation {rho_within:.2f} -> adds nothing")
+
+HOT = ["Jaipur", "Delhi NCR", "Hyderabad"]
+ss["cohort"] = np.where((ss.gen == "Gen1") & ss.city.isin(HOT), "Gen1 in Jaipur, Delhi NCR, Hyderabad", "all other stations")
+co = ss.groupby("cohort").agg(stations=("station_id", "size"), fails24=("fails24", "sum"), n24=("n24", "sum"), fails25=("fails25", "sum"), n25=("n25", "sum"))
+co["f24"] = co.fails24/co.n24; co["f25"] = co.fails25/co.n25
+co["share_fail25"] = co.fails25/co.fails25.sum(); co["share_att25"] = co.n25/co.n25.sum()
+print(co.round(3).to_string())
+hc = co.loc["Gen1 in Jaipur, Delhi NCR, Hyderabad"]
+fact("hot_gen1_stations", hc.stations); fact("hot_gen1_fail24_pct", 100*hc.f24); fact("hot_gen1_fail25_pct", 100*hc.f25)
+fact("hot_gen1_share_fail25_pct", 100*hc.share_fail25); fact("hot_gen1_share_att25_pct", 100*hc.share_att25)
+fact("hot_gen1_attempts_s24", hc.n24); fact("hot_gen1_attempts_s25", hc.n25)
+oc = co.loc["all other stations"]; fact("other_stations_fail25_pct", 100*oc.f25); fact("other_stations_n", oc.stations)
 new = ss[ss.f24.isna() & ss.f25.notna()]
 fact("new_stations_2025", len(new)); fact("new_stations_fail_2025_pct", 100*new.fails25.sum()/new.n25.sum())
-print(f"Spearman {rho:.3f} over {len(both)} stations; the 2024 top 20 hold {FACTS['top20_fail_share_2025_pct']:.1f}% of 2025 summer failures on {FACTS['top20_attempt_share_2025_pct']:.1f}% of attempts")
-print(f"Top 20 summer failure rate: {FACTS['top20_f24_pct']:.1f}% in 2024, {FACTS['top20_f25_pct']:.1f}% in 2025")
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
-axes[0].scatter(100*both.f24, 100*both.f25, s=18, color=[ACCENT if g == "Gen1" else MUTED for g in both.gen])
-lim = [0, 100*max(both.f24.max(), both.f25.max())*1.05]; axes[0].plot(lim, lim, color=INK, lw=.7, ls="--")
-axes[0].set_xlabel("Apr-Jun 2024 failed attempts, % (known in advance)"); axes[0].set_ylabel("Apr-Jun 2025, % (what happened)")
-axes[0].set_title(f"Each dot a station (red = Gen1). Rank correlation {rho:.2f}")
-k = np.arange(1, len(rk)+1)
-axes[1].plot(k, 100*rk.cum_fail_share, color=ACCENT, label="2025 failures caught by the 2024 list")
-axes[1].plot(k, 100*rk.cum_attempt_share, color=MUTED, label="2025 attempts at those stations")
-axes[1].axvline(20, color=INK, lw=.7, ls="--"); axes[1].set_xlabel("stations on the list, worst first"); axes[1].set_ylabel("% of 2025 Apr-Jun total")
-axes[1].legend(frameon=False); axes[1].set_title(f"Top 20: {FACTS['top20_fail_share_2025_pct']:.0f}% of failures from {FACTS['top20_attempt_share_2025_pct']:.0f}% of attempts")
-fig.suptitle("Back-test: a list made from summer 2024 alone predicted where summer 2025 failed", x=0.01, ha="left")
+grp = both.groupby("group").agg(n=("n25", "sum"), g24=("group24", "first"), f25=("fails25", "sum"), n25=("n25", "sum"))
+grp["g25"] = grp.f25/grp.n25
+fig, axes = plt.subplots(1, 2, figsize=(13, 4.6))
+for gname, r in grp.iterrows():
+    hot = gname.startswith("Gen1") and any(c in gname for c in HOT)
+    axes[0].scatter(100*r.g24, 100*r.g25, s=r.n/400, color=ACCENT if hot else MUTED, alpha=.8)
+    OFF = {"Gen1 in Delhi NCR": (-95, 8), "Gen1 in Jaipur": (8, -12), "Gen1 in Hyderabad": (10, -3), "Gen2 in Delhi NCR": (8, 2)}
+    if gname in OFF: axes[0].annotate(gname, (100*r.g24, 100*r.g25), xytext=OFF[gname], textcoords="offset points", fontsize=8)
+lim = [3, 19]; axes[0].plot(lim, lim, color=INK, lw=.7, ls="--")
+axes[0].set_xlabel("summer 2024 failed attempts, % (the rule)"); axes[0].set_ylabel("summer 2025, % (what happened)")
+axes[0].set_title(f"Each bubble: one charger generation in one city. Station-level R² {r_rule**2:.2f}")
+bars = pd.DataFrame({"share of summer-2025 failed attempts": [100*hc.share_fail25], "share of summer-2025 attempts": [100*hc.share_att25]})
+axes[1].bar(["failed attempts", "all attempts"], [100*hc.share_fail25, 100*hc.share_att25], color=[ACCENT, MUTED])
+for p_ in axes[1].patches: axes[1].annotate(f"{p_.get_height():.0f}%", (p_.get_x()+p_.get_width()/2, p_.get_height()), ha="center", va="bottom")
+axes[1].set_title(f"The {int(hc.stations)} Gen1 stations in the three hottest cities, summer 2025"); axes[1].set_ylabel("% of network total")
+fig.suptitle("Back-test: one rule from summer 2024 (old Gen1 cabinets in hot cities) predicted summer 2025", x=0.01, ha="left")
 savefig(fig, "backtest")
 
 # %% [markdown]
 # ### The April 2026 list
-# Same rule, now using summer 2025. "Excess failed attempts" = attempts beyond the station's own rate outside summer, at the 2025 summer volume. The list is ranked; the cut between the 20th and 21st station is thin, so treat the first 20 as the first wave, not a hard line.
+# Because a station's own history adds nothing beyond its group, the list is the whole group, not a ranking within it. **Wave 1:** every Gen1 station in Jaipur and Delhi NCR (the two groups failing on about 17% of summer attempts). **Wave 2:** Gen1 in Hyderabad. "Excess failed attempts" = attempts beyond each station's own rate outside summer, at the summer-2025 volume.
 
 # %%
 base = sql("select station_id, 1-avg(ok::int) f_other from evr where not summer group by 1")
 l26 = ss.merge(base, on="station_id").dropna(subset=["f25"])
 l26["excess_failed"] = l26.n25*(l26.f25 - l26.f_other)
-l26 = l26.sort_values("f25", ascending=False).reset_index(drop=True)
-l26.index += 1
-april = l26.head(20)[["station_id", "city", "gen", "wave", "f24", "f25", "f_other", "n25", "excess_failed", "riders25"]]
+l26 = l26[(l26.gen == "Gen1") & l26.city.isin(HOT)].copy()
+l26["wave_2026"] = np.where(l26.city.isin(["Jaipur", "Delhi NCR"]), 1, 2)
+l26 = l26.sort_values(["wave_2026", "city", "station_id"])
+april = l26[["wave_2026", "station_id", "city", "gen", "f24", "f25", "f_other", "n25", "excess_failed", "riders25"]]
+april.to_csv(os.path.join(OUT, "april_2026_list.csv"), index=False)
+wv = april.groupby("wave_2026").agg(stations=("station_id", "size"), excess=("excess_failed", "sum"), riders=("riders25", "sum"),
+                                     f25=("f25", "mean"))
+print(wv.round(1).to_string())
+for w_, r in wv.iterrows():
+    fact(f"wave{w_}_stations", r.stations); fact(f"wave{w_}_excess_failed", r.excess); fact(f"wave{w_}_riders", r.riders)
+fact("list_excess_failed", april.excess_failed.sum()); fact("list_riders_exposed", april.riders25.sum()); fact("list_stations", len(april))
+pune_g1 = ss[(ss.gen == "Gen1") & (ss.city == "Pune")]
+fact("pune_gen1_stations", len(pune_g1)); fact("pune_gen1_fail25_pct", 100*pune_g1.fails25.sum()/pune_g1.n25.sum())
 print(april.assign(f24=lambda d: (100*d.f24).round(1), f25=lambda d: (100*d.f25).round(1), f_other=lambda d: (100*d.f_other).round(1),
-                   excess_failed=lambda d: d.excess_failed.round(0)).to_string())
-april.to_csv(os.path.join(OUT, "april_2026_list.csv"))
-fact("list_excess_failed", april.excess_failed.sum()); fact("list_riders_exposed", april.riders25.sum())
-fact("list_gen1", (april.gen == "Gen1").sum()); fact("list_jaipur", (april.city == "Jaipur").sum()); fact("list_delhi", (april.city == "Delhi NCR").sum())
-fact("list_overlap_with_2024_top20", len(set(april.station_id) & set(top20.station_id)))
+                   excess_failed=lambda d: d.excess_failed.round(0)).to_string(index=False))
 
 # %% [markdown]
 # ### Did the expansion waves go where riders needed them?
 
 # %%
 need = sql("""select city, sum((not ok)::int) filter (where y=2024 and summer) fails_s24 from evr group by 1""")
-waves = sql("select city, count(*) filter (where expansion_wave<>'Launch') new_stations, count(*) filter (where expansion_wave<>'Launch' and charger_generation<>'Gen1') new_not_gen1 from st group by 1")
+waves = sql("select city, count(*) filter (where expansion_wave<>'Launch') new_stations from st group by 1")
 need = need.merge(waves, on="city"); need["share_need"] = 100*need.fails_s24/need.fails_s24.sum(); need["share_new"] = 100*need.new_stations/need.new_stations.sum()
 print(need.round(1).to_string(index=False))
 for _, r in need.iterrows(): fact(f"share_need_{r.city.replace(' ','_')}_pct", r.share_need); fact(f"share_new_{r.city.replace(' ','_')}_pct", r.share_new)
 fact("new_stations_total", need.new_stations.sum())
-hot3 = need.city.isin(["Jaipur", "Delhi NCR", "Hyderabad"])
+hot3 = need.city.isin(HOT)
 fact("hot3_share_need_pct", need[hot3].share_need.sum()); fact("hot3_share_new_pct", need[hot3].share_new.sum())
-# relief: did attempts at the top-20 stations fall after nearby new stations opened?
-rel = sql(f"""select y, sum((not ok)::int) f, count(*) n from evr where summer and station_id in ({",".join("'"+s+"'" for s in top20.station_id)}) group by 1 order by 1""")
-print(rel.to_string(index=False))
-fact("top20_summer_attempts_2024", rel.n.iloc[0]); fact("top20_summer_attempts_2025", rel.n.iloc[1])
 fig, ax = plt.subplots(figsize=(9, 4))
 xx = np.arange(len(need)); wdt = .38
 ax.bar(xx - wdt/2, need.share_need, wdt, color=ACCENT, label="share of summer-2024 failed attempts")
@@ -793,7 +815,7 @@ savefig(fig, "expansion")
 
 # %%
 per_station_lost_swaps = april.excess_failed * rec
-per_station_value = per_station_lost_swaps*avg_rev + (riders_lost/len(top20) if len(top20) else 0)*monthly_rev_retained*6
+per_station_value = per_station_lost_swaps*avg_rev + (riders_lost/FACTS["gen1_stations"])*monthly_rev_retained*6
 fact("breakeven_per_station_lakh", per_station_value.mean()/1e5)
 fact("list_lost_rev_lakh", (per_station_lost_swaps*avg_rev).sum()/1e5)
 cellora_2w_cost = sql("select avg(purchase_cost_inr) c from raw_batteries where supplier<>'Kyron' and pack_type like '2W%'").c[0]
@@ -802,8 +824,8 @@ fact("kyron_months_in_service", sql("select date_diff('month', min(ts), max(ts))
 fact("zipdrop_months_after_amendment", sql("select date_diff('month', date '2024-11-01', max(ts)) + 1 m from evr").m[0])
 verdicts = pd.DataFrame([
     ("More stations", "Not as proposed",
-     f"The {int(FACTS['new_stations_total'])} stations opened in the two waves were spread evenly; the three hottest cities had {FACTS['share_need_Jaipur_pct']+FACTS['share_need_Delhi_NCR_pct']+FACTS['share_need_Hyderabad_pct']:.0f}% of summer-2024 failures but got {FACTS['share_new_Jaipur_pct']+FACTS['share_new_Delhi_NCR_pct']+FACTS['share_new_Hyderabad_pct']:.0f}% of new stations. The 2024 worst 20 failed at {FACTS['top20_f24_pct']:.1f}% then {FACTS['top20_f25_pct']:.1f}%.",
-     "Swap the Gen1 cabinets on the April list for Gen3 in place, worst first, before 1 April 2026", "Head of Network Ops",
+     f"The {int(FACTS['new_stations_total'])} stations opened in the two waves were spread evenly; the three hottest cities had {FACTS['share_need_Jaipur_pct']+FACTS['share_need_Delhi_NCR_pct']+FACTS['share_need_Hyderabad_pct']:.0f}% of summer-2024 failures but got {FACTS['share_new_Jaipur_pct']+FACTS['share_new_Delhi_NCR_pct']+FACTS['share_new_Hyderabad_pct']:.0f}% of new stations. The {int(FACTS['hot_gen1_stations'])} Gen1 stations in those cities failed on {FACTS['hot_gen1_fail24_pct']:.1f}% of summer attempts in 2024 and {FACTS['hot_gen1_fail25_pct']:.1f}% in 2025.",
+     "Swap the Gen1 cabinets for Gen3 in place before 1 April 2026: Jaipur and Delhi NCR first, then Hyderabad", "Head of Network Ops",
      f"Pays back in one summer if it costs under ₹{FACTS['breakeven_per_station_lakh']:.1f} lakh per station", "High (back-tested)"),
     ("More batteries", "Yes, but replace, don't add Kyron",
      f"Kyron 2W packs lost {FACTS['soh_loss_per100_Kyron_2W']:.2f} health points per 100 swaps vs {FACTS['soh_loss_per100_Cellora_2W']:.2f} (Cellora); extra wear ₹{FACTS['kyron_excess_wear_cr']:.2f} crore; still issued {int(FACTS['kyron_issued_after_retirement']):,} times after 'retirement'.",
@@ -835,11 +857,12 @@ for eol in (60, 80):
     w1, w4 = a1.wear.sum()/a1.done.sum(), a4.wear.sum()/a4.done.sum()
     check("Battery wear per swap H1 2024 -> H1 2025 (₹)", f"{FACTS['wear_per_swap_h1_2024']:.2f} -> {FACTS['wear_per_swap_h1_2025']:.2f}", f"battery replaced at {eol}% health", f"{w1:.2f} -> {w4:.2f}")
     fact(f"wear_h1_2024_eol{eol}", w1); fact(f"wear_h1_2025_eol{eol}", w4)
-k_t = stats.kendalltau(both.f24, both.f25).correlation
-check("Back-test rank agreement", f"Spearman {rho:.3f}", "Kendall tau", f"{k_t:.3f}"); fact("backtest_kendall", k_t)
-for k_ in (15, 25):
-    s_ = 100*rk.head(k_).fails25.sum()/tot_f25; a_ = 100*rk.head(k_).n25.sum()/tot_n25
-    check("2024 top-20 share of 2025 failures / attempts", f"{FACTS['top20_fail_share_2025_pct']:.1f}% / {FACTS['top20_attempt_share_2025_pct']:.1f}%", f"top {k_}", f"{s_:.1f}% / {a_:.1f}%")
+for label, key in [("generation only", "gen"), ("city only", "city")]:
+    gg = both.groupby(key).apply(lambda d: d.fails24.sum()/d.n24.sum()).rename("alt")
+    r_alt = stats.pearsonr(both.join(gg, on=key).alt, both.f25)[0]**2
+    check("Rule's station-level R² (2024 rule vs 2025)", f"{FACTS['rule_r2']:.3f} (generation x city)", label, f"{r_alt:.3f}")
+    fact(f"rule_r2_{key}_only", r_alt)
+check("Station's own history beyond its group", f"Spearman {rho_within:.2f}", "Kendall tau", f"{stats.kendalltau(both.own_vs_group24, both.own_vs_group25).correlation:.2f}")
 nb = sql("select gen, summer, avg((event_type='failed_no_charged_battery')::int) f from evr group by all order by all")
 g1s = nb[(nb.gen=="Gen1") & nb.summer].f.iloc[0]; g3s = nb[(nb.gen=="Gen3") & nb.summer].f.iloc[0]
 check("Gen1 vs Gen3 Apr-Jun failure", f"{FACTS['fail_Gen1_summer_pct']:.1f}% vs {FACTS['fail_Gen3_summer_pct']:.1f}%", "only 'no charged battery' failures", f"{100*g1s:.1f}% vs {100*g3s:.1f}%")

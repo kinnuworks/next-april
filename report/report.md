@@ -1,21 +1,21 @@
 # Next April
 
-Twenty swap stations will fail again next summer. This report names them and says what VoltRelay should fund instead of more stations.
+The same 36 old swap cabinets will fail again next summer. This report shows which ones, why, and what VoltRelay should fund instead of more stations.
 
 Dhiraj Kavuri · Gradient Learnings Data Analytics Hackathon · 15 November 2026
 
 
 ## The answer in one page
 
-Every April to June, VoltRelay's oldest swap cabinets (Gen1) in Jaipur, Delhi NCR and Hyderabad overheat, charge slowly and run out of charged packs. Riders get turned away, and new riders who hit failed swaps early are the most likely to leave. It happens at the same stations every year. A list built only from summer 2024 data predicted summer 2025 station by station (rank correlation 0.948 across 90 stations). The 20 worst stations of 2024 produced 30.6% of summer 2025's failed attempts while handling 15.0% of attempts.
+Every April to June, VoltRelay's oldest swap cabinets (Gen1) in Jaipur, Delhi NCR and Hyderabad overheat, charge slowly and run out of charged packs. Riders get turned away, and new riders who hit failed swaps early are the most likely to leave. A rule taken from summer 2024 alone (each station gets the summer failure rate of its charger generation in its city) predicted every station's summer 2025 rate with R² 0.991, off by 0.38 points on average. Those 36 Gen1 stations handled 27.4% of summer 2025's attempts and produced 51.2% of its failed attempts.
 
-The 60 stations VoltRelay opened in its two expansion waves did not fix this. They were spread across all six cities, and the same 20 stations failed at 17.3% of attempts in summer 2024 and 17.0% in summer 2025.
+The 60 stations VoltRelay opened in its two expansion waves did not fix this. They were spread across all six cities, and the 36 stations failed on 15.9% of summer attempts in 2024 and 15.6% in 2025.
 
 Margins have a different cause. The cost per swap that rose most was battery wear from the new supplier, Kyron: its 2W packs lost health more than three times as fast as the others, cost ₹4.35 crore in extra wear, and were all written off on 15 June 2025. The largest fleet partner, ZipDrop, is the least profitable per swap after its discount rose from 12% to 28%.
 
 What to fund, in order:
 
-1. Swap the Gen1 cabinets on the April list for Gen3 before 1 April 2026, in place of the "more stations" proposal (owner: Head of Network Ops).
+1. Swap the Gen1 cabinets in Jaipur and Delhi NCR for Gen3 before 1 April 2026, then Hyderabad, in place of the "more stations" proposal (owner: Head of Network Ops).
 2. Stop issuing "retired" Kyron packs today, replace the Kyron 2W fleet and claim on lots KY-2407/08/09. This is how to spend the "more batteries" budget (owner: Head of Fleet & Procurement).
 3. Reopen the ZipDrop contract instead of signing an exclusive (owner: Head of Partnerships).
 4. Roll out peak pricing city by city as a revenue measure; the pilot raised revenue but did not reduce failures (owner: Head of Pricing).
@@ -55,7 +55,7 @@ After excluding test stations, 3,814,982 attempts remain, 94.02% completed.
 | Do equipment cohorts stand out? | Health loss per swap and km per swap by supplier and lot, measured from each pack's own swaps |
 | What did pricing and contracts do? | Difference-in-differences for the pilot against the four other cities; partner margin per swap |
 | Why don't new riders return? | Churn on days 30-60 after the first swap; logistic regression with controls; share of churn each factor accounts for |
-| Will it happen again? | Back-test: rank stations on summer 2024 only, check against summer 2025 |
+| Will it happen again? | Back-test: a rule built from summer 2024 only, checked station by station against summer 2025; then whether each station's own history adds anything |
 
 The notebook computes every number in this report and writes it to `facts.json`. A script fails if the report quotes a number that is not in that file, and separate tests re-derive the headline numbers with their own queries.
 
@@ -71,10 +71,10 @@ The notebook computes every number in this report and writes it to `facts.json`.
 
 ![Cabinet temperature, charge time, empty cabinets and failed attempts](../outputs/charts/q3_mechanism.png)
 
-### 3. The same stations fail every summer, and expansion did not reach them
- Station by station, summer 2024 predicts summer 2025 (rank correlation 0.948, Kendall 0.798). The 2024 worst 20, all Gen1 in Jaipur and Delhi NCR, failed at 17.3% then 17.0% even though their summer attempts grew from 96,970 to 146,813. The three hottest cities had 73% of summer 2024's failures but received 50% of the new stations.
+### 3. One rule predicts next summer, and expansion did not reach it
+ Give each station the summer 2024 failure rate of its charger generation in its city, and you predict its summer 2025 rate with R² 0.991 (90 stations; mean error 0.38 points). Both parts matter: generation alone gives 0.467 and city alone 0.853. A station's own history adds nothing beyond its group (rank correlation 0.13 within groups), so the fix is the whole group, not a ranked handful. The 36 Gen1 stations in Jaipur, Delhi NCR and Hyderabad failed on 15.9% of summer attempts in 2024 and 15.6% in 2025, while their summer traffic grew from 172,800 to 267,903 attempts. The other 114 stations failed on 5.6% in summer 2025. The three hottest cities had 73% of summer 2024's failures but received 50% of the new stations.
 
-![Back-test of the 2024 list against summer 2025](../outputs/charts/backtest.png)
+![Back-test of the summer 2024 rule against summer 2025](../outputs/charts/backtest.png)
 
 ### 4. Early failures drive new riders away
  New riders whose first 14 days had more than 20% failed attempts left at 33.2% (n=651), against 13.3% for those with none (n=6,930). With controls, every 10 points of early failure rate multiplies the odds of leaving by 1.41. Two factors are primary: early failures (16.4% of churned new riders) and being on a partner-billed plan (odds 1.83 times higher; 25.0% of churn). Kyron packs (5.9%) and a summer start (4.3%) are secondary. Queue time is not significant.
@@ -119,15 +119,13 @@ Ranked by money lost to date: Kyron extra wear ₹4.35 crore; ZipDrop amendment 
 
 | # | Proposal | Verdict | Do this | Owner | Effect | Confidence |
 |---|---|---|---|---|---|---|
-| 1 | More stations | Not as proposed | Swap the Gen1 cabinets on the April list for Gen3 in place, worst first, before 1 April 2026 | Head of Network Ops | The listed 20 stations face 19,311 excess failed attempts at 2025 volume; the upgrade pays back in one summer if it costs under ₹1.1 lakh per station, and every following summer adds the same again | High (back-tested) |
+| 1 | More stations | Not as proposed | Swap Gen1 cabinets for Gen3 in place before 1 April 2026: the 23 in Jaipur and Delhi NCR first, then the 13 in Hyderabad | Head of Network Ops | The 36 stations had 30,352 excess failed attempts in summer 2025. Lost swaps and riders alone are worth about ₹0.7 lakh per station per summer, so the upgrade has to earn back over several summers or through retention VoltRelay values above six months of revenue | High that failures repeat (back-tested); medium on the payback |
 | 2 | More batteries | Yes, as replacement | Stop issuing retired Kyron packs now; replace the Kyron 2W fleet; claim on lots KY-2407/08/09 | Head of Fleet & Procurement | About ₹4.43 crore at current pack prices, against ₹4.35 crore of extra wear in the 10 months Kyron was in service | High |
 | 3 | Network-wide pricing | Yes for revenue, not for service | Roll out city by city; measure each city against the others as in the pilot | Head of Pricing | About ₹5.41 more per swap | Medium (6 cities) |
 | 4 | ZipDrop exclusive | No | Reopen the contract: bring the discount toward the 12% it had and add the peak surcharge | Head of Partnerships | Up to ₹10.95 per ZipDrop swap | High |
 
-### The April 2026 list (first wave)
- All 20 are Gen1 launch stations: 12 in Delhi NCR and 8 in Jaipur. 17 of them were also on the 2024 list. 18,865 riders used them in summer 2025. The full ranked list with expected failed attempts per station is in `outputs/april_2026_list.csv`.
-
-STN-DEL-048, STN-JAI-141, STN-DEL-035, STN-DEL-033, STN-JAI-139, STN-DEL-045, STN-DEL-039, STN-JAI-136, STN-DEL-036, STN-JAI-142, STN-DEL-040, STN-JAI-138, STN-DEL-043, STN-JAI-135, STN-JAI-134, STN-DEL-038, STN-DEL-037, STN-JAI-137, STN-DEL-047, STN-DEL-050.
+### The April 2026 list
+ Wave 1 is the 23 Gen1 stations in Jaipur and Delhi NCR, with 21,265 excess failed attempts in summer 2025. Wave 2 is the 13 Gen1 stations in Hyderabad, with 9,086. All are original launch stations. The four Gen1 stations in Pune failed on 7.8% of summer attempts and come next if budget allows. The full list, with each station's summer and non-summer failure rates, is in `outputs/april_2026_list.csv`.
 
 ## Limits
 
@@ -135,7 +133,8 @@ STN-DEL-048, STN-JAI-141, STN-DEL-035, STN-DEL-033, STN-JAI-139, STN-DEL-045, ST
 - Cabinet upgrade prices are not in the data, so we give the break-even cost instead of a payback period.
 - Battery wear depends on an assumed replacement threshold (70% health); section 12 of the notebook shows 60% and 80%.
 - The pricing pilot has six cities, so its confidence intervals are rough.
-- The 20th and 21st stations on the list differ by less than 0.1 point; treat the list as ranked, not as a hard cut.
+- The rule is group-level. Within a group, a station's own 2024 rate did not predict its 2025 rate, so the report does not rank stations inside a group.
+- The break-even counts only lost swaps and lost new riders; it leaves out support tickets and partner goodwill, so it understates the value of fixing these stations.
 
 ## AI use
 
