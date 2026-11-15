@@ -11,9 +11,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 PY=.venv/bin/python
 
-NA_ROOT=$PWD tools/run_notebook.sh notebooks/next_april.ipynb 1800
-# run_notebook executes a copy; refresh the saved outputs only through the same path the judges use
-NA_ROOT=$PWD .venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=1800 notebooks/next_april.ipynb >/dev/null 2>&1
+# One fresh-kernel run, top to bottom; its executed copy becomes the saved notebook with outputs
+tmp_nb=$(mktemp -d)/executed.ipynb
+NA_ROOT=$PWD tools/run_notebook.sh notebooks/next_april.ipynb 1800 "$tmp_nb"
+cp "$tmp_nb" notebooks/next_april.ipynb
 
 $PY -m pytest -q tests
 
