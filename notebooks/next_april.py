@@ -565,6 +565,16 @@ ax.set_ylabel("% of swaps in peak hours"); ax.legend(frameon=False)
 ax.set_title(f"Pilot moved {abs(FACTS['did_peak_share_pts']):.1f} points of swaps out of peak hours vs the other cities")
 savefig(fig, "q5_pilot")
 
+# Event study: pilot-minus-control gap in peak share by month, relative to the pre-period average; and a placebo test that pretends the pilot began in April 2024
+es_gap = 100*(es[1] - es[0]); pre_mean = es_gap[pd.to_datetime(es_gap.index) < "2024-10-01"].mean()
+fact("pilot_gap_pre_mean", pre_mean); fact("pilot_gap_post_mean", es_gap[pd.to_datetime(es_gap.index) >= "2024-10-01"].mean())
+pre_only = cm_city[cm_city.post == 0].copy(); pre_only["fake_post"] = (pd.to_datetime(pre_only.mon) >= "2024-04-01").astype(int)
+pl = smf.wls("peak_share ~ treated:fake_post + C(city) + C(mon)", data=pre_only, weights=pre_only.n).fit(cov_type="cluster", cov_kwds={"groups": pre_only.city})
+fact("placebo_peak_share_pts", 100*pl.params["treated:fake_post"]); fact("placebo_p", pl.pvalues["treated:fake_post"])
+fact("did_peak_share_lo", 100*did["peak_share"][1][0]); fact("did_peak_share_hi", 100*did["peak_share"][1][1])
+fact("did_rev_lo", did["rev"][1][0]); fact("did_rev_hi", did["rev"][1][1])
+print(f"Placebo (fake start April 2024, pre-period only): {FACTS['placebo_peak_share_pts']:+.2f} points, p={FACTS['placebo_p']:.2f}; real effect {FACTS['did_peak_share_pts']:+.2f} points")
+
 # Partner contribution margin (2025)
 part = sql(f"""with w as ({wear_table(EOL_SOH)}),
  fixed as (select sum(s.monthly_rent_inr + s.monthly_maintenance_inr)*6 / (select count(*) from evr where ok and y=2025) per_swap
@@ -655,6 +665,48 @@ for p_, n_ in zip(ax.patches, fb["size"]): ax.annotate(f"{p_.get_height():.1f}%\
 ax.set_xlabel("share of a new rider's swap attempts that failed in their first 14 days"); ax.set_ylabel("% who did not come back (days 30-60)")
 ax.set_title("New riders who hit failed swaps early are far more likely to leave")
 savefig(fig, "q6_churn")
+
+# Out-of-sample check: fit on riders who started before 2025, predict riders who started in 2025
+from sklearn.metrics import roc_auc_score
+nr_m = nr.dropna(subset=["kyr10", "qw"])  # riders with no completed swap in 14 days have no pack supplier share; the model drops them too
+train = nr_m[pd.to_datetime(nr_m.t0) < "2025-01-01"]; test = nr_m[pd.to_datetime(nr_m.t0) >= "2025-01-01"]
+f_ = "churn ~ frate10 + qw + kyr10 + att_c + summer_start + C(city) + C(plan_type) + C(vehicle_class) + C(signup_channel)"
+m_tr = smf.logit(f_, train).fit(disp=0)
+auc_out = roc_auc_score(test.churn, m_tr.predict(test)); auc_in = roc_auc_score(train.churn, m_tr.predict(train))
+fact("churn_auc_in", auc_in); fact("churn_auc_out", auc_out); fact("churn_test_riders", len(test))
+fact("or_frate10_train", np.exp(m_tr.params["frate10"]))
+print(f"Churn model fitted on 2024 starters: AUC {auc_in:.3f} in sample, {auc_out:.3f} on {len(test):,} riders who started in 2025; early-failure odds ratio {np.exp(m_tr.params['frate10']):.2f} in the 2024-only fit")
+by_partner = nr.groupby("segment").churn.agg(["size", "mean"])
+print(by_partner.round(3).to_string())
+fact("churn_independent_pct", 100*by_partner.loc["independent", "mean"])
+
+# %% [markdown]
+# ### How sure are the headline gaps? Bootstrap confidence intervals
+# Stations (or riders) are resampled with replacement 1,000 times, so the intervals respect that attempts at the same station are not independent.
+
+# %%
+rng_ = np.random.default_rng(59500)
+st_s = sql("""select station_id, gen, city, sum((not ok)::int) filter (where summer) fs, count(*) filter (where summer) ns,
+   sum((not ok)::int) filter (where not summer) fo, count(*) filter (where not summer) no_ from evr group by all order by station_id""")
+def gap(d):
+    g1 = d[d.gen == "Gen1"]; g3 = d[d.gen == "Gen3"]
+    return 100*(g1.fs.sum()/g1.ns.sum() - g3.fs.sum()/g3.ns.sum())
+boot = [gap(st_s.iloc[rng_.integers(0, len(st_s), len(st_s))]) for _ in range(1000)]
+fact("ci_gen1_gen3_gap", gap(st_s)); fact("ci_gen1_gen3_gap_lo", np.percentile(boot, 2.5)); fact("ci_gen1_gen3_gap_hi", np.percentile(boot, 97.5))
+nr_sorted = nr.sort_values("rider_id")  # fixed row order so the seeded bootstrap is reproducible
+hi_ = nr_sorted[nr_sorted.frate > .2].churn.values; no_ = nr_sorted[nr_sorted.frate == 0].churn.values
+bc = [100*(rng_.choice(hi_, len(hi_)).mean() - rng_.choice(no_, len(no_)).mean()) for _ in range(1000)]
+fact("ci_churn_gap", 100*(hi_.mean() - no_.mean())); fact("ci_churn_gap_lo", np.percentile(bc, 2.5)); fact("ci_churn_gap_hi", np.percentile(bc, 97.5))
+kb = sql("select supplier, soh_loss_per_swap from batt where pack_type like '2W%' and soh_loss_per_swap is not null order by battery_id")
+ky_ = kb[kb.supplier == "Kyron"].soh_loss_per_swap.values; ot_ = kb[kb.supplier != "Kyron"].soh_loss_per_swap.values
+bk = [rng_.choice(ky_, len(ky_)).mean()/rng_.choice(ot_, len(ot_)).mean() for _ in range(1000)]
+fact("ci_kyron_ratio", ky_.mean()/ot_.mean()); fact("ci_kyron_ratio_lo", np.percentile(bk, 2.5)); fact("ci_kyron_ratio_hi", np.percentile(bk, 97.5))
+ci = pd.DataFrame([
+    ("Gen1 minus Gen3 summer failure rate (points)", FACTS["ci_gen1_gen3_gap"], FACTS["ci_gen1_gen3_gap_lo"], FACTS["ci_gen1_gen3_gap_hi"]),
+    ("Churn, >20% early failures minus none (points)", FACTS["ci_churn_gap"], FACTS["ci_churn_gap_lo"], FACTS["ci_churn_gap_hi"]),
+    ("Kyron 2W health loss per swap, times other 2W packs", FACTS["ci_kyron_ratio"], FACTS["ci_kyron_ratio_lo"], FACTS["ci_kyron_ratio_hi"]),
+], columns=["gap", "estimate", "95% low", "95% high"])
+print(ci.round(2).to_string(index=False))
 
 # %% [markdown]
 # ## 9. The chain, priced: what summer failures at old cabinets cost

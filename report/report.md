@@ -70,7 +70,7 @@ Which drivers are primary and which are secondary, for each outcome leadership a
 | Margin per swap | Battery wear from Kyron packs (₹4.35 crore extra) | ZipDrop's discount (₹36.9 lakh); price rise and cheaper energy pushed the other way |
 
 ### 1. Failures are a summer problem at old cabinets in hot cities
- Outside April to June, all three charger generations fail on about 4.3% of attempts. In April to June, Gen1 fails on 12.9%, Gen2 on 5.8% and Gen3 on 5.1%. By city, Jaipur (14.0%), Delhi NCR (12.6%) and Hyderabad (10.8%) lead. 36 of the 51 Gen1 stations are in those three cities.
+ Outside April to June, all three charger generations fail on about 4.3% of attempts. In April to June, Gen1 fails on 12.9%, Gen2 on 5.8% and Gen3 on 5.1%. The Gen1-Gen3 gap is 7.8 points (95% interval 6.3 to 9.1, resampling stations so that attempts at one station are not treated as independent). By city, Jaipur (14.0%), Delhi NCR (12.6%) and Hyderabad (10.8%) lead. 36 of the 51 Gen1 stations are in those three cities.
 
 ![Summer failure rate by charger generation and city](../outputs/charts/q3_gen_city.png)
 
@@ -85,17 +85,17 @@ Which drivers are primary and which are secondary, for each outcome leadership a
 ![Back-test of the summer 2024 rule against summer 2025](../outputs/charts/backtest.png)
 
 ### 4. Early failures drive new riders away
- New riders whose first 14 days had more than 20% failed attempts left at 33.2% (n=651), against 13.3% for those with none (n=6,930). With controls, every 10 points of early failure rate multiplies the odds of leaving by 1.41. Two factors are primary: early failures (16.4% of churned new riders) and being on a partner-billed plan (odds 1.83 times higher; 25.0% of churn). Kyron packs (5.9%) and a summer start (4.3%) are secondary. Queue time is not significant.
+ New riders whose first 14 days had more than 20% failed attempts left at 33.2% (n=651), against 13.3% for those with none (n=6,930); the gap is 19.9 points (95% interval 16.3 to 23.7). With controls, every 10 points of early failure rate multiplies the odds of leaving by 1.41. Fitted on 2024 starters only, the model gives the same odds ratio (1.42) and ranks the 4,154 riders who started in 2025 with AUC 0.651: good enough to rank which riders are at risk, not to predict any one of them. Two factors are primary: early failures (16.4% of churned new riders) and being on a partner-billed plan (odds 1.83 times higher; 25.0% of churn). Kyron packs (5.9%) and a summer start (4.3%) are secondary. Queue time is not significant. Partner-billed riders churn more with every partner, not just one (independents 13.1%), and the data has no field saying why they leave, so we report it without guessing a cause.
 
 ![Churn by early failure rate](../outputs/charts/q6_churn.png)
 
 ### 5. Kyron packs are the margin problem
- Kyron 2W packs lost 9.65 health points per 100 swaps against 2.99 for Cellora and 3.00 for Amptek, gave a median 44.1 km per swap against 55.2, and all 1,385 were retired at 60.5% health. Their extra wear cost ₹4.35 crore. The "other" ticket category is battery complaints filed as vehicle problems: 33.5% of those tickets name a Kyron pack, the same as low-range tickets (34.2%) and far above billing disputes (14.1%).
+ Kyron 2W packs lost 9.65 health points per 100 swaps against 2.99 for Cellora and 3.00 for Amptek (3.22 times as fast, 95% interval 3.21 to 3.24), gave a median 44.1 km per swap against 55.2, and all 1,385 were retired at 60.5% health. Their extra wear cost ₹4.35 crore. The "other" ticket category is battery complaints filed as vehicle problems: 33.5% of those tickets name a Kyron pack, the same as low-range tickets (34.2%) and far above billing disputes (14.1%).
 
 ![Health loss and range by supplier](../outputs/charts/q4_kyron.png)
 
 ### 6. Pricing raised revenue without fixing service, and ZipDrop's discount is the costliest contract
- The pilot moved 3.1 points of swaps out of peak hours and added ₹5.41 per swap against the other cities; peak-hour failures did not fall (+0.57 points, not significant). ZipDrop's revenue per swap fell from ₹59.60 to ₹48.65 after its amendment, ₹36.9 lakh in 8 months, and in 2025 it had the lowest margin per swap of any partner.
+ The pilot moved 3.1 points of swaps out of peak hours (95% interval 2.6 to 3.6) and added ₹5.41 per swap (4.95 to 5.87) against the other cities; peak-hour failures did not fall (+0.57 points, not significant). A placebo test that pretends the pilot began in April 2024 finds +0.67 points, a small difference in the opposite direction, so the effect is not an existing trend, though the two groups were not perfectly parallel before. ZipDrop's revenue per swap fell from ₹59.60 to ₹48.65 after its amendment, ₹36.9 lakh in 8 months, and in 2025 it had the lowest margin per swap of any partner.
 
 ![Margin per swap by partner](../outputs/charts/q5_partners.png)
 
@@ -140,7 +140,8 @@ Ranked by money lost to date: Kyron extra wear ₹4.35 crore; ZipDrop amendment 
 - This is observational data. The heat mechanism is shown in the telemetry, and the back-test shows the pattern repeats, but no experiment was run.
 - Cabinet upgrade prices are not in the data, so we give the break-even cost instead of a payback period.
 - Battery wear depends on an assumed replacement threshold (70% health); section 12 of the notebook shows 60% and 80%.
-- The pricing pilot has six cities, so its confidence intervals are rough.
+- The pricing pilot has six cities, so its confidence intervals are rough, and its placebo test shows a small pre-existing difference between pilot and control cities.
+- The churn model ranks risk (AUC 0.651 on unseen riders) but cannot say which individual rider will leave.
 - The rule is group-level. Within a group, a station's own 2024 rate did not predict its 2025 rate, so the report does not rank stations inside a group.
 - The upgrade effect assumes a replaced cabinet performs like the Gen3 cabinets already running in the same city. Its rupee value counts only swaps not lost; it leaves out riders kept, support tickets and partner goodwill, so it understates the value.
 
