@@ -20,6 +20,8 @@ One rule from summer 2024 (each station gets the failure rate of its charger gen
 
 **Run it in about two minutes:** [open the notebook in Google Colab](https://colab.research.google.com/github/kinnuworks/next-april/blob/master/notebooks/next_april.ipynb) and choose Runtime → Run all. It downloads the organiser's eight CSV files itself and runs top to bottom. If Google Drive blocks the download ("too many users have downloaded this file"), open the organiser's data folder in Drive, choose Organise → Add shortcut to My Drive, and run again: the notebook mounts your Drive and reads the files from the shortcut.
 
+**See it live:** [next-april-six.vercel.app](https://next-april-six.vercel.app), the one-page briefing with a station explorer.
+
 **Read it in five:** [`report/Next_April_report.pdf`](report/Next_April_report.pdf).
 
 ## What drives what (primary vs secondary)

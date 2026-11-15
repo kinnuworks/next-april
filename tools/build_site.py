@@ -249,7 +249,7 @@ footer{padding:40px 0 64px;color:#737373;font-size:14px;border-top:1px solid var
     body = f"""<div class="hero-bg"><div class="wrap">
 <header class="nav"><a class="brand" href="#">{MARK}<span>Next April</span></a>
 <nav class="links"><a href="#win">Why</a><a href="#fund">What to fund</a><a href="#explore">Stations</a><a href="#trust">How it's checked</a></nav>
-<div class="navr"><a class="si" href="../report/Next_April_report.pdf">Report</a><a class="btn btn-nav" href="#explore">Look up a station <span aria-hidden="true">&rarr;</span></a></div></header>
+<div class="navr"><a class="si" href="Next_April_report.pdf">Report</a><a class="btn btn-nav" href="#explore">Look up a station <span aria-hidden="true">&rarr;</span></a></div></header>
 <div class="hero">
 <a class="badge" href="#win"><span class="tag">Back-tested</span>A summer 2024 rule, scored on summer 2025 <span aria-hidden="true">&rarr;</span></a>
 <h1>The same {B36} cabinets will fail next April.</h1>
@@ -278,4 +278,5 @@ if __name__ == "__main__":
     out = os.path.join(ROOT, "site")
     os.makedirs(out, exist_ok=True)
     open(os.path.join(out, "index.html"), "w", encoding="utf-8").write(page_a())
+    __import__("shutil").copy(os.path.join(ROOT, "report", "Next_April_report.pdf"), os.path.join(out, "Next_April_report.pdf"))
     print("built site/index.html")
