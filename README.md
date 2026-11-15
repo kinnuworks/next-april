@@ -2,7 +2,7 @@
 
 The same 36 old battery-swap cabinets will fail again next summer (April to June). This analysis shows which ones, why, and what VoltRelay should fund instead of more stations.
 
-One rule from summer 2024 (each station gets the failure rate of its charger generation in its city) predicted every station's summer 2025 failure rate with R² 0.991. The 36 Gen1 stations, the oldest cabinet generation, in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer 2025 attempts and produced 51.2% of its failed attempts.
+One rule from summer 2024 (each station gets the failure rate of its charger generation in its city) predicted summer 2025 failure rates for the 90 stations open both summers with an out-of-sample R² of 0.990. The 36 Gen1 stations, the oldest cabinet generation, in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer 2025 attempts and produced 51.2% of its failed attempts.
 
 ![Back-test: the summer 2024 rule against summer 2025](outputs/charts/backtest.png)
 

@@ -230,8 +230,13 @@ issue("CSAT mostly missing, not at random", "yes", int(FACTS["csat_missing"]),
       f"Scores recorded on {100*cs.has.iloc[0]:.0f}% of <4h tickets vs {100*cs.has.iloc[-1]:.0f}% of >24h ones, but scores barely differ by resolution time ({', '.join(f'{v:.2f}' for v in cs.csat)}), so naive {naive:.2f} vs re-weighted {w:.2f}: the bias is real but small here.")
 
 # 2.9 Ticket categories
-issue("Ticket category not verified", "yes", int(sql("select count(*) n from raw_support_tickets where category in ('other','app_issue')").n[0]),
-      "Re-tagged from comment text (section 6)", "See the battery-complaint recount in section 6.")
+VEHICLE_BLAME = ["general issue with the vehicle performance", "bike problem lag raha hai overall", "scooter weak lag raha hai aajkal"]
+n_retag = int(sql("select count(*) n from raw_support_tickets where category='other' and rider_comment in ('" + "','".join(VEHICLE_BLAME) + "')").n[0])
+n_other = int(sql("select count(*) n from raw_support_tickets where category='other'").n[0])
+fact("tickets_retagged", n_retag); fact("tickets_other_total", n_other)
+issue("Ticket category not verified", "yes", n_retag,
+      "Re-tagged 'other' tickets whose comment blames the vehicle ('scooter weak', 'bike problem', 'vehicle performance') as battery/range complaints",
+      f"All {n_other:,} 'other' tickets carry one of these three comments; section 6 shows they name Kyron packs as often as low-range tickets do, so battery complaints are undercounted by that much.")
 
 # Undocumented issues we found
 pm = sql("select payment_mode, count(*) n from raw_swap_events group by 1")
@@ -407,6 +412,8 @@ piv = gc[gc.summer].pivot(index="gen", columns="city", values="f")*100
 print("Apr-Jun failure %, charger generation x city\n", piv.round(1).to_string())
 g = sql("select gen, summer, 1-avg(ok::int) f from evr group by all order by all")
 for _, r in g.iterrows(): fact(f"fail_{r.gen}_{'summer' if r.summer else 'other'}_pct", 100*r.f)
+nbm = sql("select gen, avg((event_type='failed_no_charged_battery')::int) filter (where not ok) nb from evr where summer group by 1")
+for _, r in nbm.iterrows(): fact(f"nobatt_share_of_fails_summer_{r.gen}_pct", 100*r.nb)
 c = sql("select city, 1-avg(ok::int) f from evr where summer group by 1 order by 2 desc")
 for _, r in c.iterrows(): fact(f"fail_summer_{r.city.replace(' ','_')}_pct", 100*r.f)
 gen1_hot = sql("select count(*) n from st where charger_generation='Gen1' and city in ('Jaipur','Delhi NCR','Hyderabad')").n[0]
@@ -552,10 +559,20 @@ for y in ["peak_share", "rev", "peak_fail"]:
     m = smf.wls(f"{y} ~ treated:post + C(city) + C(mon)", data=cm_city, weights=cm_city.n).fit(cov_type="cluster", cov_kwds={"groups": cm_city.city})
     did[y] = (m.params["treated:post"], m.conf_int().loc["treated:post"].tolist(), m.pvalues["treated:post"])
     print(f"DiD {y}: {m.params['treated:post']:.4f}  95% CI {m.conf_int().loc['treated:post'].round(4).tolist()}  p={m.pvalues['treated:post']:.3f}")
+# Exact permutation test: the pilot effect if any 2 of the 6 cities had been the pilot
+from itertools import combinations
+cities6 = sorted(cm_city.city.unique()); perm = []
+for pair in combinations(cities6, 2):
+    d_ = cm_city.assign(treated=cm_city.city.isin(pair).astype(int))
+    perm.append((pair, smf.wls("peak_share ~ treated:post + C(city) + C(mon)", data=d_, weights=d_.n).fit().params["treated:post"]))
+real = did["peak_share"][0]
+fact("perm_pairs", len(perm)); fact("perm_rank", sum(abs(v) >= abs(real) - 1e-12 for _, v in perm)); fact("perm_p", FACTS["perm_rank"]/len(perm))
+print("Permutation: real pilot effect ranks", int(FACTS["perm_rank"]), "of", len(perm), "possible city pairs by size")
 fact("did_peak_share_pts", 100*did["peak_share"][0]); fact("did_rev_inr", did["rev"][0]); fact("did_peak_fail_pts", 100*did["peak_fail"][0])
 pre = cm_city[cm_city.post == 0].groupby(["treated", "mon"]).apply(lambda d: np.average(d.peak_share, weights=d.n)).unstack(0)
 pre_gap_sd = (pre[1] - pre[0]).std()
 fact("did_pretrend_gap_sd_pts", 100*pre_gap_sd)
+for _, r in spr.iterrows(): fact(f"swaps_per_rider_week_{'indep' if r.indep else 'partner'}_{'after' if r.post else 'before'}", r.per_rider_week)
 es = cm_city.groupby(["treated", "mon"]).apply(lambda d: np.average(d.peak_share, weights=d.n)).unstack(0)
 fig, ax = plt.subplots(figsize=(9, 4))
 ax.plot(pd.to_datetime(es.index), 100*es[1], color=ACCENT, label="Pilot cities (Bengaluru, Pune)")
@@ -592,6 +609,11 @@ ind = part[part.partner == "Independent riders"].iloc[0]; fact("indep_rev_2025",
 zz = sql("""select ts >= '2024-11-01' after, avg(revenue) rev from evr where ok and partner_id='FP-03' and ts between '2024-08-01' and '2025-01-31' group by 1 order by 1""")
 fact("zipdrop_rev_before", zz.rev.iloc[0]); fact("zipdrop_rev_after", zz.rev.iloc[1])
 zip_lost = (zz.rev.iloc[0] - zz.rev.iloc[1]) * sql("select count(*) n from evr where ok and partner_id='FP-03' and ts >= '2024-11-01'").n[0]
+zc = sql("""select partner_id='FP-03' zip, ts >= '2024-11-01' after, avg(revenue) rev from evr
+   where ok and partner_id is not null and ts between '2024-08-01' and '2025-01-31' group by all""").pivot(index="zip", columns="after", values="rev")
+zip_did = (zc.loc[True, True] - zc.loc[True, False]) - (zc.loc[False, True] - zc.loc[False, False])
+fact("zipdrop_did_rev", zip_did); fact("other_partners_rev_change", zc.loc[False, True] - zc.loc[False, False])
+fact("zipdrop_amendment_cost_did_lakh", -zip_did*sql("select count(*) n from evr where ok and partner_id='FP-03' and ts >= '2024-11-01'").n[0]/1e5)
 fact("zipdrop_amendment_cost_lakh", zip_lost/1e5); fact("zipdrop_rev_drop", zz.rev.iloc[0] - zz.rev.iloc[1])
 zd = sql("select discount_pct, discount_pct_after_amendment from raw_fleet_partners where partner_name='ZipDrop'")
 fact("zipdrop_discount_before_pct", zd.discount_pct[0]); fact("zipdrop_discount_after_pct", zd.discount_pct_after_amendment[0])
@@ -622,7 +644,9 @@ select r.rider_id, r.plan_type, r.vehicle_class, r.signup_channel, coalesce(p.pa
 from raw_riders r join fa using(rider_id) join w using(rider_id) left join lat using(rider_id) left join raw_fleet_partners p using(partner_id)
 where r.signup_date >= '2024-01-01' and fa.t0 < '2025-05-01'""")
 nr["churn"] = nr.churn.astype(int); nr["summer_start"] = nr.summer_start.astype(int)
-nr["frate10"] = 10*nr.frate; nr["kyr10"] = 10*nr.kyr; nr["att_c"] = nr.att.clip(upper=40)
+nr["kyr_missing"] = nr.kyr.isna().astype(int)  # riders with no completed swap in 14 days received no pack: keep them, flag them
+nr["frate10"] = 10*nr.frate; nr["kyr10"] = 10*nr.kyr.fillna(0); nr["att_c"] = nr.att.clip(upper=40)
+fact("churn_no_completed_riders", nr.kyr_missing.sum())
 fact("new_riders", len(nr)); fact("new_rider_churn_pct", 100*nr.churn.mean())
 coh = nr.groupby(pd.to_datetime(nr.t0).dt.to_period("Q").astype(str)).churn.agg(["size", "mean"])
 print(coh.round(3).to_string())
@@ -632,7 +656,8 @@ fb = nr.groupby(bands).churn.agg(["size", "mean"]); print(fb.round(3).to_string(
 fact("churn_nofail_pct", 100*fb.loc["none", "mean"]); fact("churn_nofail_n", fb.loc["none", "size"])
 fact("churn_highfail_pct", 100*fb.loc[">20%", "mean"]); fact("churn_highfail_n", fb.loc[">20%", "size"])
 
-logit = smf.logit("churn ~ frate10 + qw + kyr10 + att_c + summer_start + C(city) + C(plan_type) + C(vehicle_class) + C(signup_channel)", nr).fit(disp=0)
+logit = smf.logit("churn ~ frate10 + qw + kyr10 + kyr_missing + att_c + summer_start + C(city) + C(plan_type) + C(vehicle_class) + C(signup_channel)", nr).fit(disp=0)
+fact("churn_model_n", logit.nobs)
 tab = pd.DataFrame({"odds_ratio": np.exp(logit.params), "p": logit.pvalues}).round(3)
 print(tab.to_string())
 fact("or_frate10", np.exp(logit.params["frate10"])); fact("or_kyr10", np.exp(logit.params["kyr10"])); fact("or_summer", np.exp(logit.params["summer_start"]))
@@ -668,9 +693,9 @@ savefig(fig, "q6_churn")
 
 # Out-of-sample check: fit on riders who started before 2025, predict riders who started in 2025
 from sklearn.metrics import roc_auc_score
-nr_m = nr.dropna(subset=["kyr10", "qw"])  # riders with no completed swap in 14 days have no pack supplier share; the model drops them too
+nr_m = nr  # riders with no completed swap in 14 days have no pack supplier share; the model drops them too
 train = nr_m[pd.to_datetime(nr_m.t0) < "2025-01-01"]; test = nr_m[pd.to_datetime(nr_m.t0) >= "2025-01-01"]
-f_ = "churn ~ frate10 + qw + kyr10 + att_c + summer_start + C(city) + C(plan_type) + C(vehicle_class) + C(signup_channel)"
+f_ = "churn ~ frate10 + qw + kyr10 + kyr_missing + att_c + summer_start + C(city) + C(plan_type) + C(vehicle_class) + C(signup_channel)"
 m_tr = smf.logit(f_, train).fit(disp=0)
 auc_out = roc_auc_score(test.churn, m_tr.predict(test)); auc_in = roc_auc_score(train.churn, m_tr.predict(train))
 fact("churn_auc_in", auc_in); fact("churn_auc_out", auc_out); fact("churn_test_riders", len(test))
@@ -723,8 +748,12 @@ rec = sql("""with f as (select rider_id, ts from evr where not ok),
  nxt as (select f.rider_id, f.ts, min(e.ts) nxt from f left join evr e on e.rider_id=f.rider_id and e.ok and e.ts > f.ts and e.ts <= f.ts + interval 2 hour group by all)
  select avg((nxt is null)::int) lost from nxt""").lost[0]
 fact("failed_not_recovered_pct", 100*rec)
+rec24 = sql("""with f as (select rider_id, ts from evr where not ok),
+ nxt as (select f.rider_id, f.ts, min(e.ts) nxt from f left join evr e on e.rider_id=f.rider_id and e.ok and e.ts > f.ts and e.ts <= f.ts + interval 24 hour group by all)
+ select avg((nxt is null)::int) lost from nxt""").lost[0]
+fact("failed_not_recovered_24h_pct", 100*rec24)
 avg_rev = sql("select avg(revenue) r from evr where ok").r[0]
-lost_swaps = excess_attempts * rec
+lost_swaps = excess_attempts * rec24  # not recovered anywhere within 24 hours
 fact("gen1_summer_lost_swaps", lost_swaps); fact("gen1_summer_lost_rev_lakh", lost_swaps*avg_rev/1e5)
 # churn link: riders lost to early failures, and how many of their early failures happened at Gen1 in summer
 share_gen1_summer = sql("""with fa as (select rider_id, min(ts) t0 from evr group by 1)
@@ -740,15 +769,15 @@ for mths in (3, 6, 12):
     fact(f"riders_lost_value_{mths}m_lakh", riders_lost*monthly_rev_retained*mths/1e5)
 chain = pd.DataFrame([
     ("Extra failed attempts at Gen1 in Apr-Jun (both summers)", f"{excess_attempts:,.0f}", ""),
-    ("... of which the rider did not swap anywhere within 2 hours", f"{100*rec:.0f}%", f"₹{lost_swaps*avg_rev/1e5:.1f} lakh revenue"),
+    ("... of which the rider did not swap anywhere within 24 hours", f"{100*rec24:.0f}%", f"₹{lost_swaps*avg_rev/1e5:.1f} lakh revenue at risk"),
     ("New riders lost to early failures that happened at Gen1 in summer", f"{riders_lost:,.0f}", f"₹{FACTS['riders_lost_value_3m_lakh']:.1f}-{FACTS['riders_lost_value_12m_lakh']:.1f} lakh (3-12 months of revenue)"),
 ], columns=["link", "size", "₹"])
 print(chain.to_string(index=False))
 
 leaks = pd.DataFrame([
     ("Kyron packs wearing out faster (to Jun 2025)", FACTS["kyron_excess_wear_inr"]/1e5),
-    ("ZipDrop discount raised 12% -> 28% (Nov 2024-Jun 2025)", FACTS["zipdrop_amendment_cost_lakh"]),
-    ("Summer failures at Gen1: swaps lost", FACTS["gen1_summer_lost_rev_lakh"]),
+    ("ZipDrop discount raised 12% -> 28% (Nov 2024-Jun 2025)", FACTS["zipdrop_amendment_cost_did_lakh"]),
+    ("Summer failures at Gen1: revenue at risk (no swap within 24h)", FACTS["gen1_summer_lost_rev_lakh"]),
     ("Summer failures at Gen1: new riders lost (6 months)", FACTS["riders_lost_value_6m_lakh"]),
 ], columns=["leak", "₹ lakh"]).sort_values("₹ lakh")
 print(leaks.round(1).to_string(index=False))
@@ -777,11 +806,22 @@ both = both.join(g24, on="group")
 r_rule = stats.pearsonr(both.group24, both.f25)[0]
 mae_rule = (both.group24 - both.f25).abs().mean()
 rho = stats.spearmanr(both.f24, both.f25).correlation
+gsum = both.groupby("group")[["fails24", "n24"]].transform("sum")
+both["group24_loo"] = np.where(gsum.n24 > both.n24, (gsum.fails24 - both.fails24)/(gsum.n24 - both.n24), both.f24)
+def oos_r2(pred): return 1 - ((both.f25 - pred)**2).sum()/((both.f25 - both.f25.mean())**2).sum()
+net24 = both.fails24.sum()/both.n24.sum()
+fact("oos_r2_rule_loo", oos_r2(both.group24_loo)); fact("oos_r2_network_mean", oos_r2(pd.Series(net24, index=both.index)))
+fact("oos_r2_own_last_year", oos_r2(both.f24)); fact("rmse_rule_loo_pts", 100*np.sqrt(((both.f25 - both.group24_loo)**2).mean()))
+fact("stations_total", len(ss))
+print(f"Out-of-sample R^2 (1 - SSE/SST): rule, leave-one-station-out {FACTS['oos_r2_rule_loo']:.3f}; each station's own 2024 rate {FACTS['oos_r2_own_last_year']:.3f}; network average {FACTS['oos_r2_network_mean']:.3f}")
 both["own_vs_group24"] = both.f24 - both.group24
 both["own_vs_group25"] = both.f25 - both.groupby("group").f25.transform("mean")
 rho_within = stats.spearmanr(both.own_vs_group24, both.own_vs_group25).correlation
 fact("backtest_stations", len(both)); fact("backtest_spearman", rho)
 fact("rule_r2", r_rule**2); fact("rule_mae_pts", 100*mae_rule); fact("within_group_spearman", rho_within)
+_r = np.random.default_rng(1); _b = both.sort_values("station_id").reset_index(drop=True)
+_bs = [stats.spearmanr(*_b.iloc[_r.integers(0, len(_b), len(_b))][["own_vs_group24", "own_vs_group25"]].values.T).correlation for _ in range(1000)]
+fact("within_group_spearman_lo", np.percentile(_bs, 2.5)); fact("within_group_spearman_hi", np.percentile(_bs, 97.5))
 print(f"Group rule from 2024 predicts each station's 2025 summer failure rate: R^2 {r_rule**2:.3f}, mean error {100*mae_rule:.2f} points ({len(both)} stations)")
 print(f"A station's own 2024 history beyond its group: rank correlation {rho_within:.2f} -> adds nothing")
 
@@ -874,15 +914,17 @@ savefig(fig, "expansion")
 # Cabinet upgrade prices are not in the data, so instead of guessing one we compute the **break-even**: the most VoltRelay could pay per listed station and still get the money back in one summer.
 
 # %%
-per_station_lost_swaps = up.set_index("station_id").avoided.reindex(april.station_id).values * rec
-fact("upgrade_saved_rev_lakh", (up.avoided*rec*avg_rev).sum()/1e5)
+per_station_lost_swaps = up.set_index("station_id").avoided.reindex(april.station_id).values * rec24
+fact("upgrade_saved_rev_lakh", (up.avoided*rec24*avg_rev).sum()/1e5)
 per_station_value = per_station_lost_swaps*avg_rev + (riders_lost/FACTS["gen1_stations"])*monthly_rev_retained*6
-fact("breakeven_per_station_lakh", per_station_value.mean()/1e5)
+fact("breakeven_per_station_lakh", per_station_value.mean()/1e5); fact("breakeven_all36_lakh", per_station_value.sum()/1e5)
 fact("list_lost_rev_lakh", (per_station_lost_swaps*avg_rev).sum()/1e5)
 cellora_2w_cost = sql("select avg(purchase_cost_inr) c from raw_batteries where supplier<>'Kyron' and pack_type like '2W%'").c[0]
 fact("pack_2w_cost_inr", cellora_2w_cost); fact("kyron_2w_replace_cost_cr", FACTS["packs_Kyron_2W"]*cellora_2w_cost/1e7)
 fact("kyron_months_in_service", sql("select date_diff('month', min(ts), max(ts)) + 1 m from evr e join raw_batteries b on b.battery_id=e.battery_out_id where b.supplier='Kyron' and b.pack_type like '2W%'").m[0])
 fact("zipdrop_months_after_amendment", sql("select date_diff('month', date '2024-11-01', max(ts)) + 1 m from evr").m[0])
+fact("kyron_saving_per_1000_lakh", (FACTS["kyron_wear_2w"]-FACTS["other_wear_2w"])*1000/1e5)
+for m_ in (3, 12): fact(f"retention_value_{m_}m_lakh", FACTS["churn_from_early_fail"]*FACTS["monthly_rev_retained_rider"]*m_/1e5)
 verdicts = pd.DataFrame([
     ("More stations", "Not as proposed",
      f"The {int(FACTS['new_stations_total'])} stations opened in the two waves were spread evenly; the three hottest cities had {FACTS['share_need_Jaipur_pct']+FACTS['share_need_Delhi_NCR_pct']+FACTS['share_need_Hyderabad_pct']:.0f}% of summer-2024 failures but got {FACTS['share_new_Jaipur_pct']+FACTS['share_new_Delhi_NCR_pct']+FACTS['share_new_Hyderabad_pct']:.0f}% of new stations. The {int(FACTS['hot_gen1_stations'])} Gen1 stations in those cities failed on {FACTS['hot_gen1_fail24_pct']:.1f}% of summer attempts in 2024 and {FACTS['hot_gen1_fail25_pct']:.1f}% in 2025.",
@@ -891,13 +933,17 @@ verdicts = pd.DataFrame([
     ("More batteries", "Yes, but replace, don't add Kyron",
      f"Kyron 2W packs lost {FACTS['soh_loss_per100_Kyron_2W']:.2f} health points per 100 swaps vs {FACTS['soh_loss_per100_Cellora_2W']:.2f} (Cellora); extra wear ₹{FACTS['kyron_excess_wear_cr']:.2f} crore; still issued {int(FACTS['kyron_issued_after_retirement']):,} times after 'retirement'.",
      "Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek; file a warranty claim on lots KY-2407/08/09", "Head of Fleet & Procurement",
-     f"Replacement about ₹{FACTS['kyron_2w_replace_cost_cr']:.2f} crore at current pack prices, against ₹{FACTS['kyron_excess_wear_cr']:.2f} crore extra wear in 10 months", "High"),
+     f"Each 1,000 swaps on a Cellora/Amptek pack instead of Kyron saves about ₹{(FACTS['kyron_wear_2w']-FACTS['other_wear_2w'])*1000/1e5:.2f} lakh of wear; replacing the 2W fleet costs about ₹{FACTS['kyron_2w_replace_cost_cr']:.2f} crore", "Medium (wear depends on the replacement threshold)"),
     ("Network-wide pricing rollout", "Yes for revenue, not for service",
      f"Pilot vs other cities: {FACTS['did_peak_share_pts']:+.1f} points of swaps in peak hours, {FACTS['did_rev_inr']:+.2f} ₹ revenue per swap, peak-hour failures {FACTS['did_peak_fail_pts']:+.2f} points (not significant).",
      "Roll out city by city as a revenue measure; do not count on it to fix summer stock-outs", "Head of Pricing", f"About ₹{FACTS['did_rev_inr']:.2f} more per swap where applied", "Medium (6 city clusters)"),
     ("Long-term exclusive with ZipDrop", "No",
-     f"ZipDrop is {FACTS['zipdrop_share_swaps_2025_pct']:.0f}% of 2025 swaps but the lowest margin per swap of all partners ({FACTS['zipdrop_cm_2025']:+.2f} ₹ vs {FACTS['indep_cm_2025']:+.2f} ₹ for independents); the 28% discount cost ₹{FACTS['zipdrop_amendment_cost_lakh']:.1f} lakh in 8 months.",
-     "Reopen the contract: bring the discount back toward the 12% other partners pay and add the peak surcharge", "Head of Partnerships", f"Up to ₹{FACTS['zipdrop_rev_before']-FACTS['zipdrop_rev_after']:.2f} per ZipDrop swap", "High"),
+     f"ZipDrop is {FACTS['zipdrop_share_swaps_2025_pct']:.0f}% of 2025 swaps but the lowest margin per swap of all partners ({FACTS['zipdrop_cm_2025']:+.2f} ₹ vs {FACTS['indep_cm_2025']:+.2f} ₹ for independents); against other partners over the same months the amendment cut its revenue by ₹{-FACTS['zipdrop_did_rev']:.2f} per swap, ₹{FACTS['zipdrop_amendment_cost_did_lakh']:.1f} lakh in 8 months.",
+     "Reopen the contract: bring the discount back toward the 12% other partners pay and add the peak surcharge", "Head of Partnerships", f"Up to ₹{-FACTS['zipdrop_did_rev']:.2f} per ZipDrop swap", "High"),
+    ("Not in the four proposals: new-rider retention", "Add",
+     f"New riders with more than 20% failed swaps in their first 14 days left at {FACTS['churn_highfail_pct']:.1f}% against {FACTS['churn_nofail_pct']:.1f}%; the model attributes {FACTS['churn_from_early_fail']:.0f} lost riders to early failures.",
+     "In April to June, steer riders in their first 14 days to Gen2/Gen3 stations in the app and hold a charged pack for them at Gen1 stations; review onboarding with fleet partners, whose riders churn more", "Head of Customer Experience",
+     f"₹{FACTS['churn_from_early_fail']*FACTS['monthly_rev_retained_rider']*3/1e5:.1f}-{FACTS['churn_from_early_fail']*FACTS['monthly_rev_retained_rider']*12/1e5:.1f} lakh of revenue from riders kept (3-12 months each)", "Medium (observational)"),
 ], columns=["proposal", "verdict", "evidence", "do this instead", "owner", "effect", "confidence"])
 print(verdicts.to_string(index=False))
 verdicts.to_csv(os.path.join(OUT, "budget_verdicts.csv"), index=False)
@@ -952,6 +998,18 @@ audit.to_csv(os.path.join(OUT, "self_audit.csv"), index=False)
 # * **What AI got wrong and we caught:** a first pass at pilot peak hours listed hours where both tariffs appear; checking tariff counts by hour fixed the window (section 7). A first data load read blank pack IDs as text; the loader now treats blanks as missing (section 2).
 
 # %%
+# Data for the one-page summary (site/index.html draws its charts from this file)
+summary = {
+    "groups": [{"group": g, "g24": round(100*r.g24, 2), "g25": round(100*r.g25, 2), "attempts25": int(r.n25),
+                "hot": bool(g.startswith("Gen1") and any(c in g for c in HOT))} for g, r in grp.iterrows()],
+    "mechanism": [{"gen": r.gen, "band": r.band, "charge_min": round(r.chg, 1), "zero_pct": round(100*r.zero, 2)} for _, r in tele.iterrows()],
+    "churn": [{"band": str(b), "pct": round(100*v, 1), "n": int(n)} for b, v, n in zip(fb.index, fb["mean"], fb["size"])],
+    "stations": april.assign(f25=lambda d: (100*d.f25).round(1))[["wave_2026", "station_id", "city", "f25"]].to_dict("records"),
+    "verdicts": verdicts[["proposal", "verdict", "do this instead", "owner", "confidence"]].to_dict("records"),
+}
+with open(os.path.join(OUT, "summary_data.json"), "w") as f:
+    json.dump(summary, f, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
+
 with open(os.path.join(OUT, "facts.json"), "w") as f:
     json.dump({k: round(v, 6) for k, v in FACTS.items()}, f, indent=1, sort_keys=True)
 print(f"{len(FACTS)} facts written to outputs/facts.json")

@@ -8,7 +8,7 @@ soc_out_pct above 100,yes,3698,Capped at 100 (sensor drift),Affects delivered-ch
 riders.home_city spellings,yes,585,Mapped 21 spellings to 6 cities,585 riders would otherwise sit in 15 phantom cities.
 Telemetry partial or missing,yes,46371,"Those station-hours left out of telemetry averages, never treated as zero",Gaps hit 10.9% of hours at poor-connectivity stations vs 1.7% elsewhere.
 "CSAT mostly missing, not at random",yes,28871,Re-weighted CSAT by resolution-time bucket,"Scores recorded on 43% of <4h tickets vs 22% of >24h ones, but scores barely differ by resolution time (3.59, 3.55, 3.61), so naive 3.56 vs re-weighted 3.56: the bias is real but small here."
-Ticket category not verified,yes,15271,Re-tagged from comment text (section 6),See the battery-complaint recount in section 6.
+Ticket category not verified,yes,9484,"Re-tagged 'other' tickets whose comment blames the vehicle ('scooter weak', 'bike problem', 'vehicle performance') as battery/range complaints","All 9,484 'other' tickets carry one of these three comments; section 6 shows they name Kyron packs as often as low-range tickets do, so battery complaints are undercounted by that much."
 payment_mode is the same on every row,no (docs list upi / wallet / prepaid / partner_invoice),3877013,Not used,"All 3,877,013 rows say 'partner_invoice', including independent riders, so payment channel cannot be analysed."
 battery_in_id rarely missing,no (docs: 'often missing'),28282,Read as null where blank,"Only 28,282 blanks, and failed attempts still record a returned pack."
 Packs issued before their commission_date,no,1011084,"Pack age measured from first observed swap, not the ledger date","Median 126 days early, so ledger dates cannot be used for battery age."

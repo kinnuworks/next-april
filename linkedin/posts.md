@@ -40,7 +40,7 @@ Submitted my entry for the Data Analytics Hackathon by Gradient Learnings. It's 
 
 The question was where a battery-swap network should spend its next budget. The answer: the same old cabinets fail every summer, and one simple rule names them in advance.
 
-I took summer 2024 alone and gave each station the failure rate of its charger generation in its city. Checked against summer 2025, that rule predicted every station's rate with R² 0.991. The 36 oldest cabinets in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer attempts and produced 51.2% of the failures. The 60 new stations opened in between didn't change that: those 36 failed on 15.9% of summer attempts in 2024 and 15.6% in 2025.
+I took summer 2024 alone and gave each station the failure rate of its charger generation in its city. Checked against summer 2025, that rule predicted the 90 stations open both summers with an out-of-sample R² of 0.990. The 36 oldest cabinets in Jaipur, Delhi NCR and Hyderabad handled 27.4% of summer attempts and produced 51.2% of the failures. The 60 new stations opened in between didn't change that: those 36 failed on 15.9% of summer attempts in 2024 and 15.6% in 2025.
 
 The surprise was what didn't work. Ranking individual stations by their own history added nothing once you knew the group (rank correlation 0.13), so the fix is the whole group.
 

@@ -1,0 +1,432 @@
+{
+ "groups": [
+  {
+   "group": "Gen1 in Bengaluru",
+   "g24": 5.38,
+   "g25": 5.25,
+   "attempts25": 64858,
+   "hot": false
+  },
+  {
+   "group": "Gen1 in Delhi NCR",
+   "g24": 16.76,
+   "g25": 17.08,
+   "attempts25": 95355,
+   "hot": true
+  },
+  {
+   "group": "Gen1 in Hyderabad",
+   "g24": 13.73,
+   "g25": 13.31,
+   "attempts25": 101066,
+   "hot": true
+  },
+  {
+   "group": "Gen1 in Jaipur",
+   "g24": 17.5,
+   "g25": 16.98,
+   "attempts25": 71482,
+   "hot": true
+  },
+  {
+   "group": "Gen1 in Mumbai",
+   "g24": 4.68,
+   "g25": 4.39,
+   "attempts25": 14048,
+   "hot": false
+  },
+  {
+   "group": "Gen1 in Pune",
+   "g24": 7.86,
+   "g25": 7.79,
+   "attempts25": 26933,
+   "hot": false
+  },
+  {
+   "group": "Gen2 in Bengaluru",
+   "g24": 4.84,
+   "g25": 4.74,
+   "attempts25": 65976,
+   "hot": false
+  },
+  {
+   "group": "Gen2 in Delhi NCR",
+   "g24": 8.58,
+   "g25": 8.88,
+   "attempts25": 33689,
+   "hot": false
+  },
+  {
+   "group": "Gen2 in Hyderabad",
+   "g24": 8.02,
+   "g25": 7.76,
+   "attempts25": 18937,
+   "hot": false
+  },
+  {
+   "group": "Gen2 in Mumbai",
+   "g24": 4.47,
+   "g25": 4.49,
+   "attempts25": 68430,
+   "hot": false
+  },
+  {
+   "group": "Gen2 in Pune",
+   "g24": 5.73,
+   "g25": 5.56,
+   "attempts25": 59646,
+   "hot": false
+  }
+ ],
+ "mechanism": [
+  {
+   "gen": "Gen1",
+   "band": "35-40",
+   "charge_min": 88.0,
+   "zero_pct": 0.91
+  },
+  {
+   "gen": "Gen2",
+   "band": "35-40",
+   "charge_min": 64.0,
+   "zero_pct": 0.48
+  },
+  {
+   "gen": "Gen3",
+   "band": "35-40",
+   "charge_min": 42.0,
+   "zero_pct": 0.39
+  },
+  {
+   "gen": "Gen1",
+   "band": "40-45",
+   "charge_min": 101.1,
+   "zero_pct": 2.11
+  },
+  {
+   "gen": "Gen2",
+   "band": "40-45",
+   "charge_min": 66.0,
+   "zero_pct": 0.58
+  },
+  {
+   "gen": "Gen3",
+   "band": "40-45",
+   "charge_min": 42.3,
+   "zero_pct": 0.29
+  },
+  {
+   "gen": "Gen1",
+   "band": "45+",
+   "charge_min": 155.6,
+   "zero_pct": 37.29
+  },
+  {
+   "gen": "Gen2",
+   "band": "45+",
+   "charge_min": 72.1,
+   "zero_pct": 1.0
+  },
+  {
+   "gen": "Gen3",
+   "band": "45+",
+   "charge_min": 43.5,
+   "zero_pct": 0.33
+  },
+  {
+   "gen": "Gen1",
+   "band": "<35",
+   "charge_min": 88.0,
+   "zero_pct": 0.55
+  },
+  {
+   "gen": "Gen2",
+   "band": "<35",
+   "charge_min": 64.0,
+   "zero_pct": 0.37
+  },
+  {
+   "gen": "Gen3",
+   "band": "<35",
+   "charge_min": 42.0,
+   "zero_pct": 0.24
+  }
+ ],
+ "churn": [
+  {
+   "band": "none",
+   "pct": 13.3,
+   "n": 6930
+  },
+  {
+   "band": "0-10%",
+   "pct": 11.3,
+   "n": 4220
+  },
+  {
+   "band": "10-20%",
+   "pct": 20.0,
+   "n": 1996
+  },
+  {
+   "band": ">20%",
+   "pct": 33.2,
+   "n": 651
+  }
+ ],
+ "stations": [
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-033",
+   "city": "Delhi NCR",
+   "f25": 17.3
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-035",
+   "city": "Delhi NCR",
+   "f25": 17.3
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-036",
+   "city": "Delhi NCR",
+   "f25": 17.1
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-037",
+   "city": "Delhi NCR",
+   "f25": 16.9
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-038",
+   "city": "Delhi NCR",
+   "f25": 16.9
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-039",
+   "city": "Delhi NCR",
+   "f25": 17.2
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-040",
+   "city": "Delhi NCR",
+   "f25": 17.0
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-043",
+   "city": "Delhi NCR",
+   "f25": 17.0
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-045",
+   "city": "Delhi NCR",
+   "f25": 17.3
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-047",
+   "city": "Delhi NCR",
+   "f25": 16.7
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-048",
+   "city": "Delhi NCR",
+   "f25": 18.3
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-049",
+   "city": "Delhi NCR",
+   "f25": 16.4
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-DEL-050",
+   "city": "Delhi NCR",
+   "f25": 16.6
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-133",
+   "city": "Jaipur",
+   "f25": 15.4
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-134",
+   "city": "Jaipur",
+   "f25": 17.0
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-135",
+   "city": "Jaipur",
+   "f25": 17.0
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-136",
+   "city": "Jaipur",
+   "f25": 17.2
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-137",
+   "city": "Jaipur",
+   "f25": 16.8
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-138",
+   "city": "Jaipur",
+   "f25": 17.0
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-139",
+   "city": "Jaipur",
+   "f25": 17.3
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-140",
+   "city": "Jaipur",
+   "f25": 16.6
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-141",
+   "city": "Jaipur",
+   "f25": 17.7
+  },
+  {
+   "wave_2026": 1,
+   "station_id": "STN-JAI-142",
+   "city": "Jaipur",
+   "f25": 17.1
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-064",
+   "city": "Hyderabad",
+   "f25": 13.7
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-065",
+   "city": "Hyderabad",
+   "f25": 13.0
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-067",
+   "city": "Hyderabad",
+   "f25": 12.5
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-068",
+   "city": "Hyderabad",
+   "f25": 13.5
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-069",
+   "city": "Hyderabad",
+   "f25": 13.9
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-070",
+   "city": "Hyderabad",
+   "f25": 13.2
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-071",
+   "city": "Hyderabad",
+   "f25": 13.0
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-072",
+   "city": "Hyderabad",
+   "f25": 14.1
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-073",
+   "city": "Hyderabad",
+   "f25": 13.5
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-074",
+   "city": "Hyderabad",
+   "f25": 13.1
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-076",
+   "city": "Hyderabad",
+   "f25": 12.6
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-077",
+   "city": "Hyderabad",
+   "f25": 13.4
+  },
+  {
+   "wave_2026": 2,
+   "station_id": "STN-HYD-078",
+   "city": "Hyderabad",
+   "f25": 12.5
+  }
+ ],
+ "verdicts": [
+  {
+   "proposal": "More stations",
+   "verdict": "Not as proposed",
+   "do this instead": "Swap the Gen1 cabinets for Gen3 in place before 1 April 2026: Jaipur and Delhi NCR first, then Hyderabad",
+   "owner": "Head of Network Ops",
+   "confidence": "High (back-tested)"
+  },
+  {
+   "proposal": "More batteries",
+   "verdict": "Yes, but replace, don't add Kyron",
+   "do this instead": "Stop issuing retired Kyron packs now; replace the Kyron 2W fleet with Cellora/Amptek; file a warranty claim on lots KY-2407/08/09",
+   "owner": "Head of Fleet & Procurement",
+   "confidence": "Medium (wear depends on the replacement threshold)"
+  },
+  {
+   "proposal": "Network-wide pricing rollout",
+   "verdict": "Yes for revenue, not for service",
+   "do this instead": "Roll out city by city as a revenue measure; do not count on it to fix summer stock-outs",
+   "owner": "Head of Pricing",
+   "confidence": "Medium (6 city clusters)"
+  },
+  {
+   "proposal": "Long-term exclusive with ZipDrop",
+   "verdict": "No",
+   "do this instead": "Reopen the contract: bring the discount back toward the 12% other partners pay and add the peak surcharge",
+   "owner": "Head of Partnerships",
+   "confidence": "High"
+  },
+  {
+   "proposal": "Not in the four proposals: new-rider retention",
+   "verdict": "Add",
+   "do this instead": "In April to June, steer riders in their first 14 days to Gen2/Gen3 stations in the app and hold a charged pack for them at Gen1 stations; review onboarding with fleet partners, whose riders churn more",
+   "owner": "Head of Customer Experience",
+   "confidence": "Medium (observational)"
+  }
+ ]
+}
