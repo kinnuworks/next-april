@@ -784,6 +784,14 @@ print(wv.round(1).to_string())
 for w_, r in wv.iterrows():
     fact(f"wave{w_}_stations", r.stations); fact(f"wave{w_}_excess_failed", r.excess); fact(f"wave{w_}_riders", r.riders)
 fact("list_excess_failed", april.excess_failed.sum()); fact("list_riders_exposed", april.riders25.sum()); fact("list_stations", len(april))
+# Effect of the upgrade, from the data: if each listed Gen1 station had failed at the summer-2025 rate of Gen3 stations in its own city
+g3 = ss[ss.gen == "Gen3"].groupby("city").apply(lambda d: d.fails25.sum()/d.n25.sum()).rename("g3_rate")
+up = april.merge(g3, left_on="city", right_index=True)
+up["avoided"] = up.n25*(up.f25 - up.g3_rate)
+for w_, d_ in up.groupby("wave_2026"): fact(f"wave{w_}_avoided_failed", d_.avoided.sum())
+fact("upgrade_avoided_failed", up.avoided.sum()); fact("upgrade_avoided_pct_of_summer_fails", 100*up.avoided.sum()/ss.fails25.sum())
+fact("upgrade_cohort_fail_after_pct", 100*((up.n25*up.f25).sum() - up.avoided.sum())/up.n25.sum())
+print(f"If the 36 Gen1 stations failed like Gen3 in their cities: {up.avoided.sum():,.0f} fewer failed attempts in summer 2025 ({FACTS['upgrade_avoided_pct_of_summer_fails']:.1f}% of all summer failures)")
 pune_g1 = ss[(ss.gen == "Gen1") & (ss.city == "Pune")]
 fact("pune_gen1_stations", len(pune_g1)); fact("pune_gen1_fail25_pct", 100*pune_g1.fails25.sum()/pune_g1.n25.sum())
 print(april.assign(f24=lambda d: (100*d.f24).round(1), f25=lambda d: (100*d.f25).round(1), f_other=lambda d: (100*d.f_other).round(1),
@@ -814,7 +822,8 @@ savefig(fig, "expansion")
 # Cabinet upgrade prices are not in the data, so instead of guessing one we compute the **break-even**: the most VoltRelay could pay per listed station and still get the money back in one summer.
 
 # %%
-per_station_lost_swaps = april.excess_failed * rec
+per_station_lost_swaps = up.set_index("station_id").avoided.reindex(april.station_id).values * rec
+fact("upgrade_saved_rev_lakh", (up.avoided*rec*avg_rev).sum()/1e5)
 per_station_value = per_station_lost_swaps*avg_rev + (riders_lost/FACTS["gen1_stations"])*monthly_rev_retained*6
 fact("breakeven_per_station_lakh", per_station_value.mean()/1e5)
 fact("list_lost_rev_lakh", (per_station_lost_swaps*avg_rev).sum()/1e5)

@@ -25,7 +25,7 @@ What to fund, in order:
 
 VoltRelay runs unmanned battery-swap cabinets for gig and logistics riders in six Indian cities. Between January 2024 and June 2025 completed swaps grew 2.93 times and revenue 3.18 times, but failed attempts grew 5.98 times, new-rider retention fell in some cohorts, and margin per swap came under pressure. Leadership is about to choose between four budget proposals: more stations, more batteries, a network-wide pricing rollout, and a long-term exclusive with ZipDrop.
 
-The data has one row per swap attempt, completed or not, so a failure rate here is non-completed attempts divided by all attempts. Five changes happened during the period, and each has to be separated from the others: two expansion waves, a base price change in July 2024, a peak/off-peak pilot in Bengaluru and Pune from October 2024, the Kyron supplier, and the ZipDrop contract amendment on 1 November 2024.
+The data has one row per swap attempt, completed or not. An attempt fails when the cabinet has no charged pack (failed_no_charged_battery), the rider gives up in the queue (abandoned_queue), the rider cancels (cancelled_by_rider) or the system errors (failed_system_error). A failure rate here is all non-completed attempts divided by all attempts. Five changes happened during the period, and each has to be separated from the others: two expansion waves, a base price change in July 2024, a peak/off-peak pilot in Bengaluru and Pune from October 2024, the Kyron supplier, and the ZipDrop contract amendment on 1 November 2024.
 
 ## Data Cleaning
 
@@ -60,6 +60,14 @@ After excluding test stations, 3,814,982 attempts remain, 94.02% completed.
 The notebook computes every number in this report and writes it to `facts.json`. A script fails if the report quotes a number that is not in that file, and separate tests re-derive the headline numbers with their own queries.
 
 ## Key Insights
+
+Which drivers are primary and which are secondary, for each outcome leadership asked about:
+
+| Outcome | Primary driver (evidence) | Secondary drivers |
+|---|---|---|
+| Service failures | Gen1 cabinets in Jaipur, Delhi NCR and Hyderabad in April to June: 51.2% of summer 2025 failures from 27.4% of attempts; mechanism shown in telemetry | Evening rush after hot days; 3W vehicles fail more often all year |
+| New-rider churn | Failed swaps in the first 14 days (16.4% of churned riders) and partner-billed plans (25.0%) | Kyron packs (5.9%), starting in April to June (4.3%); queue time not significant |
+| Margin per swap | Battery wear from Kyron packs (₹4.35 crore extra) | ZipDrop's discount (₹36.9 lakh); price rise and cheaper energy pushed the other way |
 
 ### 1. Failures are a summer problem at old cabinets in hot cities
  Outside April to June, all three charger generations fail on about 4.3% of attempts. In April to June, Gen1 fails on 12.9%, Gen2 on 5.8% and Gen3 on 5.1%. By city, Jaipur (14.0%), Delhi NCR (12.6%) and Hyderabad (10.8%) lead. 36 of the 51 Gen1 stations are in those three cities.
@@ -119,7 +127,7 @@ Ranked by money lost to date: Kyron extra wear ₹4.35 crore; ZipDrop amendment 
 
 | # | Proposal | Verdict | Do this | Owner | Effect | Confidence |
 |---|---|---|---|---|---|---|
-| 1 | More stations | Not as proposed | Swap Gen1 cabinets for Gen3 in place before 1 April 2026: the 23 in Jaipur and Delhi NCR first, then the 13 in Hyderabad | Head of Network Ops | The 36 stations had 30,352 excess failed attempts in summer 2025. Lost swaps and riders alone are worth about ₹0.7 lakh per station per summer, so the upgrade has to earn back over several summers or through retention VoltRelay values above six months of revenue | High that failures repeat (back-tested); medium on the payback |
+| 1 | More stations | Not as proposed | Swap Gen1 cabinets for Gen3 in place before 1 April 2026: the 23 in Jaipur and Delhi NCR first, then the 13 in Hyderabad | Head of Network Ops | If those stations had failed at the rate of Gen3 stations in their own cities, summer 2025 would have had 27,193 fewer failed attempts, 33.3% of all summer failures, taking them from 15.6% to 5.5%. Wave 1 alone accounts for 18,910. The swaps saved are worth ₹16.0 lakh a summer before counting riders kept; cabinet prices are not in the data | High that failures repeat (back-tested); medium on the payback |
 | 2 | More batteries | Yes, as replacement | Stop issuing retired Kyron packs now; replace the Kyron 2W fleet; claim on lots KY-2407/08/09 | Head of Fleet & Procurement | About ₹4.43 crore at current pack prices, against ₹4.35 crore of extra wear in the 10 months Kyron was in service | High |
 | 3 | Network-wide pricing | Yes for revenue, not for service | Roll out city by city; measure each city against the others as in the pilot | Head of Pricing | About ₹5.41 more per swap | Medium (6 cities) |
 | 4 | ZipDrop exclusive | No | Reopen the contract: bring the discount toward the 12% it had and add the peak surcharge | Head of Partnerships | Up to ₹10.95 per ZipDrop swap | High |
@@ -134,7 +142,7 @@ Ranked by money lost to date: Kyron extra wear ₹4.35 crore; ZipDrop amendment 
 - Battery wear depends on an assumed replacement threshold (70% health); section 12 of the notebook shows 60% and 80%.
 - The pricing pilot has six cities, so its confidence intervals are rough.
 - The rule is group-level. Within a group, a station's own 2024 rate did not predict its 2025 rate, so the report does not rank stations inside a group.
-- The break-even counts only lost swaps and lost new riders; it leaves out support tickets and partner goodwill, so it understates the value of fixing these stations.
+- The upgrade effect assumes a replaced cabinet performs like the Gen3 cabinets already running in the same city. Its rupee value counts only swaps not lost; it leaves out riders kept, support tickets and partner goodwill, so it understates the value.
 
 ## AI use
 

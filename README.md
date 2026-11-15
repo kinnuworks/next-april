@@ -28,6 +28,17 @@ One rule from summer 2024 (each station gets the failure rate of its charger gen
 | Network-wide pricing | Yes for revenue only | Pilot added ₹5.41 per swap but did not reduce failures |
 | ZipDrop exclusive | No | Reopen the contract |
 
+## Charts (each makes one point)
+
+- `backtest.png`: the summer 2024 rule against summer 2025, by charger generation and city; the 36 hot-city Gen1 stations' share of failures vs attempts.
+- `q3_mechanism.png`: as cabinets heat up, only Gen1 slows down (charge time), runs out of packs, and turns riders away.
+- `q3_gen_city.png`: summer failure rate for each charger generation in each city.
+- `q6_churn.png`: new riders' churn rises with their early failure rate.
+- `q4_kyron.png`: Kyron packs lose health three times faster and give less range.
+- `q5_partners.png`, `q5_pilot.png`: ZipDrop has the lowest margin per swap; the pilot moved demand and raised revenue.
+- `expansion.png`: new stations went evenly to all cities while failures were concentrated in three.
+- `q1_trends.png`, `q1_margin_parts.png`, `q2_hours.png`, `chain_leaks.png`: trends, where each swap's rupees go, failures by hour, and money lost to each problem.
+
 ## Files
 
 - `notebooks/next_april.ipynb`: the analysis, run top to bottom (source: `notebooks/next_april.py`).

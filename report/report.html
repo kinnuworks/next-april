@@ -17,7 +17,7 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 </ol>
 <h2>Problem Understanding</h2>
 <p>VoltRelay runs unmanned battery-swap cabinets for gig and logistics riders in six Indian cities. Between January 2024 and June 2025 completed swaps grew 2.93 times and revenue 3.18 times, but failed attempts grew 5.98 times, new-rider retention fell in some cohorts, and margin per swap came under pressure. Leadership is about to choose between four budget proposals: more stations, more batteries, a network-wide pricing rollout, and a long-term exclusive with ZipDrop.</p>
-<p>The data has one row per swap attempt, completed or not, so a failure rate here is non-completed attempts divided by all attempts. Five changes happened during the period, and each has to be separated from the others: two expansion waves, a base price change in July 2024, a peak/off-peak pilot in Bengaluru and Pune from October 2024, the Kyron supplier, and the ZipDrop contract amendment on 1 November 2024.</p>
+<p>The data has one row per swap attempt, completed or not. An attempt fails when the cabinet has no charged pack (failed_no_charged_battery), the rider gives up in the queue (abandoned_queue), the rider cancels (cancelled_by_rider) or the system errors (failed_system_error). A failure rate here is all non-completed attempts divided by all attempts. Five changes happened during the period, and each has to be separated from the others: two expansion waves, a base price change in July 2024, a peak/off-peak pilot in Bengaluru and Pune from October 2024, the Kyron supplier, and the ZipDrop contract amendment on 1 November 2024.</p>
 <h2>Data Cleaning</h2>
 <p>We checked all nine documented issues and found six more. Every issue, the rows it affects, what we did and what it changes is in the notebook (section 2) and in <code>outputs/cleaning_table.csv</code>. The ones that change a result:</p>
 <table>
@@ -128,6 +128,33 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 </table>
 <p>The notebook computes every number in this report and writes it to <code>facts.json</code>. A script fails if the report quotes a number that is not in that file, and separate tests re-derive the headline numbers with their own queries.</p>
 <h2>Key Insights</h2>
+<p>Which drivers are primary and which are secondary, for each outcome leadership asked about:</p>
+<table>
+<thead>
+<tr>
+<th>Outcome</th>
+<th>Primary driver (evidence)</th>
+<th>Secondary drivers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Service failures</td>
+<td>Gen1 cabinets in Jaipur, Delhi NCR and Hyderabad in April to June: 51.2% of summer 2025 failures from 27.4% of attempts; mechanism shown in telemetry</td>
+<td>Evening rush after hot days; 3W vehicles fail more often all year</td>
+</tr>
+<tr>
+<td>New-rider churn</td>
+<td>Failed swaps in the first 14 days (16.4% of churned riders) and partner-billed plans (25.0%)</td>
+<td>Kyron packs (5.9%), starting in April to June (4.3%); queue time not significant</td>
+</tr>
+<tr>
+<td>Margin per swap</td>
+<td>Battery wear from Kyron packs (₹4.35 crore extra)</td>
+<td>ZipDrop's discount (₹36.9 lakh); price rise and cheaper energy pushed the other way</td>
+</tr>
+</tbody>
+</table>
 <h3>1. Failures are a summer problem at old cabinets in hot cities</h3>
 <p>Outside April to June, all three charger generations fail on about 4.3% of attempts. In April to June, Gen1 fails on 12.9%, Gen2 on 5.8% and Gen3 on 5.1%. By city, Jaipur (14.0%), Delhi NCR (12.6%) and Hyderabad (10.8%) lead. 36 of the 51 Gen1 stations are in those three cities.</p>
 <p><img alt="Summer failure rate by charger generation and city" src="../outputs/charts/q3_gen_city.png" /></p>
@@ -179,7 +206,7 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <td>Not as proposed</td>
 <td>Swap Gen1 cabinets for Gen3 in place before 1 April 2026: the 23 in Jaipur and Delhi NCR first, then the 13 in Hyderabad</td>
 <td>Head of Network Ops</td>
-<td>The 36 stations had 30,352 excess failed attempts in summer 2025. Lost swaps and riders alone are worth about ₹0.7 lakh per station per summer, so the upgrade has to earn back over several summers or through retention VoltRelay values above six months of revenue</td>
+<td>If those stations had failed at the rate of Gen3 stations in their own cities, summer 2025 would have had 27,193 fewer failed attempts, 33.3% of all summer failures, taking them from 15.6% to 5.5%. Wave 1 alone accounts for 18,910. The swaps saved are worth ₹16.0 lakh a summer before counting riders kept; cabinet prices are not in the data</td>
 <td>High that failures repeat (back-tested); medium on the payback</td>
 </tr>
 <tr>
@@ -220,7 +247,7 @@ img{max-width:100%;margin:6px 0 10px}code{font-size:9pt}@page{margin:14mm}h2,h3{
 <li>Battery wear depends on an assumed replacement threshold (70% health); section 12 of the notebook shows 60% and 80%.</li>
 <li>The pricing pilot has six cities, so its confidence intervals are rough.</li>
 <li>The rule is group-level. Within a group, a station's own 2024 rate did not predict its 2025 rate, so the report does not rank stations inside a group.</li>
-<li>The break-even counts only lost swaps and lost new riders; it leaves out support tickets and partner goodwill, so it understates the value of fixing these stations.</li>
+<li>The upgrade effect assumes a replaced cabinet performs like the Gen3 cabinets already running in the same city. Its rupee value counts only swaps not lost; it leaves out riders kept, support tickets and partner goodwill, so it understates the value.</li>
 </ul>
 <h2>AI use</h2>
 <p>An AI coding assistant (Claude) helped write queries and code, draft text and search public sources. Every number was checked outside the AI's own reasoning: the notebook writes each number to <code>facts.json</code>, separate tests re-derive the headline numbers with independent queries, a fresh re-derivation from the problem statement alone confirmed the key facts, and a script fails if this report quotes a number not in <code>facts.json</code>. Two AI mistakes were caught this way: a first version of the pilot's peak hours, and blank pack IDs read as text. The judgement calls (replacement threshold, value of a lost rider, the break-even framing) are ours and are stated above.</p></body></html>
