@@ -14,6 +14,10 @@
 # Dhiraj Kavuri · Gradient Learnings Data Analytics Hackathon · 15 Nov 2026
 #
 # This notebook runs top to bottom from the organiser's eight CSV files. Every number used in the report, the video and the summary is computed here and written to `outputs/facts.json`; a separate check fails if any text quotes a number that is not in that file.
+#
+# **The answer.** The same old Gen1 cabinets in Jaipur, Delhi NCR and Hyderabad fail every summer: they overheat, charge slowly and run out of charged packs. A rule built from summer 2024 alone predicted summer 2025 (section 10), and the new stations opened in between did not reach them. Fund a summer buffer of charged packs at those stations and replace the Kyron battery fleet, instead of more stations (section 11).
+#
+# **Contents.** 1 Data understanding · 2 Data cleaning (every issue, rows, effect) · 3-8 the six core questions · 9 What the failures cost · 10 The back-test, the April 2026 list, expansion waves, anomalies · 11 The pack buffer and budget verdicts · 12 Self-audit · 13 AI use
 
 # %% [markdown]
 # ## Setup
@@ -965,6 +969,27 @@ for _, r in need.iterrows(): fact(f"share_need_{r.city.replace(' ','_')}_pct", r
 fact("new_stations_total", need.new_stations.sum())
 hot3 = need.city.isin(HOT)
 fact("hot3_share_need_pct", need[hot3].share_need.sum()); fact("hot3_share_new_pct", need[hot3].share_new.sum())
+# Where the waves went: location type, use, and whether a nearby new station relieved a hot Gen1 station
+loc = sql("select expansion_wave wave, location_type, count(*) n from st group by all").pivot(index="location_type", columns="wave", values="n").fillna(0).astype(int)
+print(loc.to_string())
+fact("wave1_easy_sites", loc.loc[["highway_fuel_pump", "residential"], "Wave1_2024H2"].sum()); fact("wave1_stations", loc["Wave1_2024H2"].sum())
+fact("wave2_market_sites", loc.loc["market", "Wave2_2025H1"]); fact("wave2_stations", loc["Wave2_2025H1"].sum())
+use = sql("""select wave, count(*) filter (where ok) / count(distinct station_id) / count(distinct ts::date) per_day from evr where ts >= '2025-03-01' group by 1""").set_index("wave").per_day
+for w_, v in use.items(): fact(f"swaps_per_station_day_{w_}", v)
+geo = sql("select station_id, city, charger_generation gen, expansion_wave wave, latitude la, longitude lo from st")
+def _km(a, b, c, d):
+    return 6371*2*np.arcsin(np.sqrt(np.sin(np.radians(c - a)/2)**2 + np.cos(np.radians(a))*np.cos(np.radians(c))*np.sin(np.radians(d - b)/2)**2))
+newg = geo[geo.wave != "Launch"]; hotg = geo[(geo.gen == "Gen1") & geo.city.isin(HOT)].copy()
+hotg["near_km"] = [min(_km(r.la, r.lo, n.la, n.lo) for n in newg[newg.city == r.city].itertuples()) for r in hotg.itertuples()]
+gr = ss.set_index("station_id")[["n24", "n25", "f24", "f25"]].join(hotg.set_index("station_id").near_km, how="inner")
+gr["growth"] = gr.n25/gr.n24 - 1; gr["near"] = gr.near_km <= 1.0
+rel_ = gr.groupby("near").agg(stations=("growth", "size"), growth=("growth", "mean"), f25=("f25", "mean"))
+print(rel_.round(3).to_string())
+fact("hot_gen1_near_new_median_km", hotg.near_km.median())
+fact("hot_gen1_growth_near_pct", 100*rel_.loc[True, "growth"]); fact("hot_gen1_growth_far_pct", 100*rel_.loc[False, "growth"])
+fact("hot_gen1_fail25_near_pct", 100*rel_.loc[True, "f25"]); fact("hot_gen1_fail25_far_pct", 100*rel_.loc[False, "f25"])
+fact("hot_gen1_near_count", rel_.loc[True, "stations"])
+
 fig, ax = plt.subplots(figsize=(9, 4))
 xx = np.arange(len(need)); wdt = .38
 ax.bar(xx - wdt/2, need.share_need, wdt, color=ACCENT, label="share of summer-2024 failed attempts")
@@ -1024,6 +1049,8 @@ bf["extra"] = bf.need_hot - bf.need_cool
 spare = sql("""select s.station_id, quantile_cont(charged_2w_min, 0.1) p10 from raw_station_hourly_status h join st s using(station_id)
    where telemetry_status='ok' and month(hour_start) in (4,5,6) and year(hour_start)=2025 and s.city in ('Mumbai','Pune','Bengaluru') group by 1""")
 fact("buffer_extra_packs", bf.extra.sum()); fact("buffer_extra_per_station", bf.extra.mean())
+for sl in (0.90, 0.99):
+    fact(f"buffer_extra_packs_{int(sl*100)}", (poisson.ppf(sl, bf.lam*bf.hot/60) - poisson.ppf(sl, bf.lam*bf.cool/60)).sum())
 nbx = sql("""select sum((event_type='failed_no_charged_battery')::int) filter (where summer and y=2025) s25, count(*) filter (where summer and y=2025) n25,
    avg((event_type='failed_no_charged_battery')::int) filter (where not summer) base from evr where gen='Gen1' and city in ('Jaipur','Delhi NCR','Hyderabad')""")
 fact("buffer_avoidable_nobatt", nbx.s25[0] - nbx.base[0]*nbx.n25[0])
