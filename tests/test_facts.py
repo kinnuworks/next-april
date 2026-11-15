@@ -90,3 +90,15 @@ def test_weather_threshold(con):
     v = q(con, """select 100*avg((x.event_type<>'swap_completed')::int) from e x join city_daily_context c on c.city=x.city and c.date=x.t::date
                   where x.gen='Gen1' and c.max_temp_c > 38""")[0]
     assert abs(v - F["wx_fail_Gen1_ge38_pct"]) < 1e-6
+
+def test_empty_shelf_not_the_cause(con):
+    # Gen1, 2W riders, cabinet at 45C or more: 'no charged pack' failure rate in hours with zero charged 2W packs vs packs in stock
+    rows = con.execute("""with a as (select e.station_id, date_trunc('hour', e.t) hr, count(*) n, sum((e.event_type='failed_no_charged_battery')::int) nb
+        from e join riders r using(rider_id) where e.gen='Gen1' and r.vehicle_class='2W' group by all)
+      select h.charged_2w_min=0 empty_shelf, 100.0*sum(nb)/sum(n) pct from a join station_hourly_status h
+        on h.station_id=a.station_id and h.hour_start=a.hr and h.telemetry_status='ok' and h.cabinet_temp_c >= 45
+      where h.charged_2w_min is not null group by 1""").fetchall()
+    r = dict(rows)
+    assert abs(r[True] - F["nb_g1_hot_empty_pct"]) < 0.01 and abs(r[False] - F["nb_g1_hot_stocked_pct"]) < 0.01
+    assert r[True] < r[False]  # an empty shelf does not raise the failure rate once heat is held fixed
+    assert F["stock_mh_or_hi"] < 1
