@@ -55,9 +55,9 @@ def page(theme):
 <title>Next April</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="{FONTS}" rel="stylesheet">
 <style>
 :root{{{THEMES[theme]}}}
-*{{box-sizing:border-box}} html,body{{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}}
+*{{box-sizing:border-box}} html,body{{margin:0;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}}
 .wrap{{max-width:1180px;margin:0 auto;padding:40px 24px 64px}}
-.top{{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;font-size:13px;color:var(--muted)}}
+.top{{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px;font-size:13px;color:var(--muted)}}
 .top b{{color:var(--ink);font-family:var(--display);font-size:20px;letter-spacing:-.01em}}
 .hero{{padding:48px 0 28px}} .kicker{{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}}
 h1{{font-family:var(--display);font-size:var(--hero-size);font-weight:var(--hero-weight);line-height:1.02;letter-spacing:-.02em;margin:0;max-width:16ch}}
@@ -73,7 +73,7 @@ section{{margin-top:44px}} h2{{font-family:var(--display);font-weight:600;font-s
 .panel{{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;background-image:var(--grid)}}
 .panel h3{{margin:0 0 4px;font-size:15px}} .panel p{{margin:0 0 10px;color:var(--muted);font-size:13px}}
 svg{{width:100%;height:auto;display:block}} svg text{{fill:var(--muted);font-family:var(--mono);font-size:11px}}
-.verdicts{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}}
+.verdicts{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}}
 .verdict{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--card)}}
 .verdict .p{{font-weight:600}} .verdict .vv{{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:8px 0}}
 .verdict .vv.no{{color:var(--heat)}} .verdict .vv.yes{{color:var(--cool)}} .verdict .d{{font-size:14px;line-height:1.45}} .verdict .o{{font-size:12px;color:var(--muted);margin-top:10px}}
@@ -86,7 +86,7 @@ footer{{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid v
 [data-theme=board] h2{{text-transform:uppercase;font-size:15px;letter-spacing:.12em}}
 [data-theme=board] table{{font-family:var(--mono)}} [data-theme=board] tr:nth-child(odd) td{{background:var(--card)}}
 [data-theme=control] .panel,[data-theme=control] .verdict,[data-theme=control] .stat{{box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}}
-@media (max-width:820px){{.stats,.verdicts{{grid-template-columns:1fr 1fr}} .two,.trust{{grid-template-columns:1fr}} .wrap{{padding:24px 16px 48px}} .stat .v{{font-size:26px}}}}
+@media (max-width:820px){{h1{{max-width:none}} .verdicts{{grid-template-columns:1fr}} .stats{{grid-template-columns:1fr 1fr}} .giant{{font-size:140px}} .two,.trust{{grid-template-columns:1fr}} .wrap{{padding:24px 16px 48px}} .stat .v{{font-size:26px}}}}
 </style></head><body><div class="wrap">
 <div class="top"><b>Next April</b><span>Gradient Learnings Data Analytics Hackathon · Dhiraj Kavuri</span></div>
 <div class="hero">{hero_lead}
