@@ -64,10 +64,29 @@ EXPECTED_ROWS = {"swap_events": 3877013, "station_hourly_status": 1487712, "ride
                  "batteries": 6500, "support_tickets": 44000, "stations": 152,
                  "city_daily_context": 3282, "fleet_partners": 12}
 
+import time, urllib.request
+
+def fetch(fid, dest, tries=5):
+    """Download one file from the organiser's Drive folder; retry, then fall back to the direct download URL."""
+    for i in range(tries):
+        try:
+            if i < 3:
+                gdown.download(id=fid, output=dest, quiet=True)
+            else:
+                urllib.request.urlretrieve(f"https://drive.usercontent.google.com/download?id={fid}&export=download&confirm=t", dest)
+            with open(dest, "rb") as f:
+                head = f.read(200)
+            if b"," in head and b"<html" not in head.lower():
+                return
+        except Exception as err:
+            print(f"download attempt {i+1} for {os.path.basename(dest)} failed: {err}")
+        time.sleep(3*(i+1))
+    raise RuntimeError(f"Could not download {dest}; download it from the organiser's Drive folder into {RAW} and re-run")
+
 for name, fid in FILES.items():
     csv = os.path.join(RAW, f"{name}.csv")
     if not os.path.exists(csv):
-        gdown.download(id=fid, output=csv, quiet=True)
+        fetch(fid, csv)
     out = os.path.join(PQ, f"{name}.parquet")
     if not os.path.exists(out):
         # Empty strings in ID columns mean "missing": read them as nulls.

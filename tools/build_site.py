@@ -90,7 +90,7 @@ footer{{margin-top:48px;color:var(--muted);font-size:12px;border-top:1px solid v
 </style></head><body><div class="wrap">
 <div class="top"><b>Next April</b><span>Gradient Learnings Data Analytics Hackathon · Dhiraj Kavuri</span></div>
 <div class="hero">{hero_lead}
-<p class="sub">Every April to June, the oldest swap cabinets (Gen1) in Jaipur, Delhi NCR and Hyderabad overheat, charge slowly and run out of charged packs. A rule built from summer 2024 alone predicted summer 2025 for every station open both summers. The {n("new_stations_total", 0)} new stations VoltRelay opened in between did not reach them.</p>
+<p class="sub">Every April to June, the oldest swap cabinets (Gen1) in Jaipur, Delhi NCR and Hyderabad overheat, charge slowly and run out of charged packs. A rule built from summer 2024 alone predicted summer 2025 for every station open both summers. The {n("new_stations_total", 0)} new stations VoltRelay opened in between were spread across all six cities, not placed where these failures happen.</p>
 <div class="stats">{stat_html}</div></div>
 
 <section><h2>One rule, tested on a summer it never saw</h2>
