@@ -18,7 +18,7 @@ One rule from summer 2024 (each station gets the failure rate of its charger gen
 
 ![Share of new riders still swapping, by early failures](outputs/charts/q6_survival.png)
 
-**Run it in about two minutes:** open `notebooks/next_april.ipynb` in Google Colab and choose Runtime → Run all. It downloads the organiser's eight CSV files itself and runs top to bottom.
+**Run it in about two minutes:** open `notebooks/next_april.ipynb` in Google Colab and choose Runtime → Run all. It downloads the organiser's eight CSV files itself and runs top to bottom. If Google Drive blocks the download ("too many users have downloaded this file"), open the organiser's data folder in Drive, choose Organise → Add shortcut to My Drive, and run again: the notebook mounts your Drive and reads the files from the shortcut.
 
 **Read it in five:** [`report/Next_April_report.pdf`](report/Next_April_report.pdf).
 

@@ -87,10 +87,46 @@ def fetch(fid, dest, tries=5):
         time.sleep(3*(i+1))
     raise RuntimeError(f"Could not download {dest}; download it from the organiser's Drive folder into {RAW} and re-run")
 
+def find_copy(name):
+    """A copy of the organiser's file already on this machine: NA_DATA, or (in Colab) a shortcut to the organiser's folder in My Drive."""
+    roots = [os.environ.get("NA_DATA", "")]
+    if os.path.isdir("/content/drive/MyDrive"):
+        roots.append("/content/drive/MyDrive")
+    for r in filter(None, roots):
+        for depth in ("", "*", "*/*", "*/*/*"):
+            hits = glob.glob(os.path.join(r, depth, f"{name}.csv"))
+            if hits:
+                return hits[0]
+    return None
+
+def get(name, fid, dest):
+    src = find_copy(name)
+    if src:
+        os.symlink(src, dest); return
+    try:
+        fetch(fid, dest)
+    except RuntimeError:
+        # Google Drive limits downloads of popular files ("Too many users have viewed or downloaded this file").
+        # In Colab: add a shortcut to the organiser's folder in your own Drive, and the notebook reads it from there.
+        if os.path.exists(dest): os.remove(dest)
+        try:
+            from google.colab import drive
+            print("Drive download blocked. Mounting your Google Drive to look for a shortcut to the organiser's folder...")
+            drive.mount("/content/drive")
+        except ImportError:
+            raise RuntimeError(f"Could not download {name}.csv. Put the organiser's eight CSV files in a folder and set NA_DATA to it, then re-run.")
+        src = find_copy(name)
+        if not src:
+            raise RuntimeError("Not found in your Drive. Open the organiser's folder (link above), choose 'Organise > Add shortcut' to My Drive, then re-run.")
+        os.symlink(src, dest)
+
+import glob
 for name, fid in FILES.items():
     csv = os.path.join(RAW, f"{name}.csv")
+    if os.path.exists(csv) and os.path.getsize(csv) < 10000 and name in ("swap_events", "station_hourly_status"):
+        os.remove(csv)  # an error page saved by an earlier blocked download
     if not os.path.exists(csv):
-        fetch(fid, csv)
+        get(name, fid, csv)
     out = os.path.join(PQ, f"{name}.parquet")
     if not os.path.exists(out):
         # Empty strings in ID columns mean "missing": read them as nulls.
@@ -383,6 +419,9 @@ fails_first = first.attempts - first.done; fails_last = last.attempts - last.don
 fact("fail_count_growth_x", fails_last/fails_first)
 fact("cm_h1_2024", (h1.rev - h1.energy - h1.wear - h1.fixed).sum()/h1.done.sum())
 fact("cm_h1_2025", (h4.rev - h4.energy - h4.wear - h4.fixed).sum()/h4.done.sum())
+# The same margin before battery wear: positive and rising, so wear alone turns it negative
+fact("cm_ex_wear_h1_2024", (h1.rev - h1.energy - h1.fixed).sum()/h1.done.sum())
+fact("cm_ex_wear_h1_2025", (h4.rev - h4.energy - h4.fixed).sum()/h4.done.sum())
 for k in ["rev","energy","wear","fixed"]:
     fact(f"{k}_per_swap_h1_2024", h1[k].sum()/h1.done.sum()); fact(f"{k}_per_swap_h1_2025", h4[k].sum()/h4.done.sum())
 print(f"Completed swaps x{FACTS['done_growth_x']:.2f}, revenue x{FACTS['rev_growth_x']:.2f}, failed attempts x{FACTS['fail_count_growth_x']:.2f} (Jan 2024 -> Jun 2025)")
